@@ -178,7 +178,7 @@ app.goPlace = async (place, { quiet = false } = {}) => {
   if (place.kind !== 'me') globe.clearMarkers('place');
   else globe.clearMarkers('me');
   globe.addMarker(place.lat, place.lon, place.name, place.sub || fmtCoord(place.lat, place.lon), place.kind || 'place');
-  if (app.userLoc && place.kind !== 'me' && !globe.markers.some(m => m.kind === 'me')) globe.addMarker(app.userLoc.lat, app.userLoc.lon, 'Ihr Standort', app.userLoc.city, 'me');
+  if (app.userLoc && place.kind !== 'me' && !globe.markers.some(m => m.kind === 'me') && haversine(app.userLoc.lat, app.userLoc.lon, place.lat, place.lon) > 3) globe.addMarker(app.userLoc.lat, app.userLoc.lon, 'Ihr Standort', app.userLoc.city, 'me');
   await app.flyTo(place.lat, place.lon, altForKm(place.km || 50));
 };
 
@@ -282,8 +282,10 @@ stage.addEventListener('wheel', e => {
     app.gcam.alt = clamp(app.gcam.alt * Math.exp(e.deltaY * 0.0012), 0.003, 7);
   } else app.ocam.tgtDist = clamp(app.ocam.tgtDist * Math.exp(e.deltaY * 0.001), 3, 16);
 }, { passive: false });
+const fitFov = () => { camera.fov = camera.aspect < 1 ? Math.min(78, 45 / Math.pow(camera.aspect, 0.65)) : 45; };
+fitFov();
 addEventListener('resize', () => {
-  camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+  camera.aspect = innerWidth / innerHeight; fitFov(); camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight); composer.setSize(innerWidth, innerHeight); labels.setSize(innerWidth, innerHeight);
   bloom.setSize(innerWidth, innerHeight);
 });
@@ -451,6 +453,17 @@ function openBrainPanel() {
   box?.addEventListener('click', () => { brainPanelOpen = false; });
 }
 document.getElementById('btnBrain').addEventListener('click', openBrainPanel);
+
+/* ---------- Teilen ---------- */
+document.getElementById('btnShare').addEventListener('click', async () => {
+  const url = location.origin + location.pathname;
+  const data = { title: 'J.A.R.V.I.S.', text: 'Probier meinen holografischen KI-Assistenten aus:', url };
+  try {
+    if (navigator.share) { await navigator.share(data); return; }
+    await navigator.clipboard.writeText(url);
+    ui.log('ai', 'Link kopiert: ' + url);
+  } catch (e) { if (e?.name !== 'AbortError') ui.log('ai', 'Link zum Weitergeben: ' + url); }
+});
 
 /* ---------- Installierbare App (PWA) ---------- */
 let installEvt = null;

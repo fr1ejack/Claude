@@ -1,6 +1,6 @@
 /* Service Worker: macht Jarvis installierbar und lädt die App-Oberfläche auch offline/schneller.
  * Live-Daten (Flüge, Karten, Wetter, Recherche) und das KI-Modell werden NICHT hier gecacht. */
-const CACHE = 'jarvis-v2';
+const CACHE = 'jarvis-v3';
 const SHELL = ['./', 'index.html', 'css/style.css', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png',
   'js/main.js', 'js/util.js', 'js/materials.js', 'js/core.js', 'js/objects.js', 'js/globe.js', 'js/flights.js', 'js/services.js',
   'js/assistant.js', 'js/ui.js', 'js/brain.js', 'js/memory.js', 'js/llm-worker.js'];
