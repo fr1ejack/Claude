@@ -14,6 +14,11 @@ export function log(role, text) {
   return d;
 }
 
+export function setLogText(el, text) {
+  el.innerHTML = `<b>J.A.R.V.I.S.</b>${esc(text)}`;
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
 let onPanelClick = null;
 export function showPanel(title, html, onClick) {
   panel.hidden = false;

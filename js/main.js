@@ -10,6 +10,8 @@ import { FlightLayer } from './flights.js';
 import { Core, Projector } from './core.js';
 import { buildImageHologram } from './objects.js';
 import { Assistant } from './assistant.js';
+import { Brain, MODELS } from './brain.js';
+import { memory } from './memory.js';
 import * as S from './services.js';
 import * as ui from './ui.js';
 
@@ -368,7 +370,9 @@ function frame(now) {
 }
 
 /* ================= Assistent & UI ================= */
-const assistant = new Assistant(app);
+const brain = new Brain();
+const assistant = new Assistant(app, brain);
+app.brain = brain;
 const form = document.getElementById('cmdForm');
 const input = document.getElementById('cmd');
 form.addEventListener('submit', e => { e.preventDefault(); const v = input.value; input.value = ''; assistant.handle(v); });
@@ -389,7 +393,76 @@ document.getElementById('tglWake').addEventListener('click', e => {
   if (on) ui.log('ai', 'Weckwort aktiv – sagen Sie „Jarvis, …“ gefolgt von Ihrer Frage.');
 });
 document.getElementById('btnHome').addEventListener('click', () => assistant.handle('zurück'));
-ui.chips(['Wo bin ich?', 'Wo ist Dortmund?', 'Flüge über Frankfurt', 'Flüge über mir', 'Zeig mir einen PS5-Controller', 'Öffne ihn', 'Suche Flug LH400', 'Wo fliegen gerade A380?', 'Wetter in Berlin', 'Was ist ein Schwarzes Loch?'], t => assistant.handle(t));
+document.getElementById('tglConvo').addEventListener('click', e => {
+  if (!assistant.SR) return assistant.say('Spracherkennung wird von diesem Browser nicht unterstützt. Bitte Chrome oder Edge verwenden.');
+  assistant.convo = !assistant.convo;
+  e.currentTarget.classList.toggle('on', assistant.convo);
+  if (assistant.convo) { assistant.say('Gesprächsmodus aktiv. Ich höre nach jeder Antwort automatisch wieder zu.'); }
+});
+
+/* ---------- KI-Kern (lokales Sprachmodell) ---------- */
+const brainLabel = { off: 'AUS', loading: 'LÄDT', ready: 'BEREIT', error: 'FEHLER' };
+function brainStatus() {
+  ui.setStat('stBrain', brain.state === 'loading' ? `LÄDT ${Math.round(brain.progress * 100)} %` : brainLabel[brain.state]);
+  ui.setStat('stMem', `${memory.experiences().length} / ${memory.facts().length}`);
+  document.getElementById('btnBrain').classList.toggle('on', brain.ready);
+}
+let brainPanelOpen = false;
+brain.onChange((state, progress, text) => {
+  brainStatus();
+  if (brainPanelOpen && document.getElementById('brainBar')) {
+    document.getElementById('brainBar').style.width = `${Math.round(progress * 100)}%`;
+    document.getElementById('brainTxt').textContent = text;
+  }
+});
+setInterval(brainStatus, 3000);
+function openBrainPanel() {
+  brainPanelOpen = true;
+  const cur = brain.model || memory.model() || MODELS[1].id;
+  const ok = Brain.supported();
+  ui.showPanel('KI-KERN · GEHIRN', `
+    <p>Jarvis' Gehirn ist ein offenes Sprachmodell, das <b>direkt in Ihrem Browser</b> läuft – ohne API-Key, ohne Kosten, ohne Konto. Es wird einmalig heruntergeladen und danach gespeichert. Vor jeder Antwort recherchiert Jarvis selbst im Internet und merkt sich, was er lernt.</p>
+    ${ok ? '' : '<p style="color:var(--warn)">⚠ Dieser Browser unterstützt kein WebGPU. Bitte aktuelles Chrome oder Edge (PC/Mac/Android) bzw. Safari ab iOS 26 verwenden.</p>'}
+    <div class="models">${MODELS.map(mo => `<label><input type="radio" name="model" value="${mo.id}" ${mo.id === cur ? 'checked' : ''}><b>${mo.name}</b><span class="hint">${mo.size}</span><small>${mo.note}</small></label>`).join('')}</div>
+    <button type="button" class="btn" data-id="load">${brain.ready ? 'MODELL WECHSELN' : 'KI-KERN AKTIVIEREN'}</button>
+    <div class="bar"><i id="brainBar" style="width:${Math.round(brain.progress * 100)}%"></i></div>
+    <div id="brainTxt" class="hint">${brain.ready ? 'Bereit · ' + brain.model : brain.state === 'loading' ? 'Lädt …' : 'Nicht geladen'}</div>
+    <div class="sect"><h3>IHRE REGELN FÜR JARVIS</h3>
+      <textarea class="rules" id="rulesBox" placeholder="z. B. Nenn mich Boss. Antworte immer ausführlich. Keine Witze über …">${memory.rules().replace(/</g, '&lt;')}</textarea>
+      <button type="button" class="btn" data-id="rules">REGELN SPEICHERN</button>
+      <p class="hint">Auch per Sprache: „Ab jetzt …“, „Hör auf …“, „Merke dir, dass …“</p></div>
+    <div class="sect"><h3>GEDÄCHTNIS</h3>
+      <p>${memory.experiences().length} gesammelte Erfahrungen aus dem Internet · ${memory.facts().length} Fakten über Sie</p>
+      ${memory.facts().slice(-5).map(f => `<p class="hint">• ${f.text.replace(/</g, '&lt;')}</p>`).join('')}
+      <button type="button" class="btn ghost" data-id="forget">GEDÄCHTNIS LÖSCHEN</button></div>`, async id => {
+    if (id === 'load') {
+      const sel = document.querySelector('input[name=model]:checked')?.value || MODELS[1].id;
+      assistant.say('Aktiviere meinen KI-Kern. Beim ersten Mal lade ich das Modell herunter, das kann einige Minuten dauern.');
+      try { await brain.load(sel); assistant.say('KI-Kern online. Sie können mich jetzt alles fragen.'); }
+      catch (e) { assistant.say('Der KI-Kern konnte nicht starten: ' + (Brain.supported() ? 'zu wenig Grafikspeicher oder Download unterbrochen. Versuchen Sie das leichte Modell.' : 'Ihr Browser unterstützt kein WebGPU.')); }
+    } else if (id === 'rules') {
+      memory.setRules(document.getElementById('rulesBox').value);
+      assistant.say('Ihre Regeln sind gespeichert.');
+    } else if (id === 'forget') {
+      memory.clear(); brain.reset(); brainStatus(); openBrainPanel();
+    }
+  });
+  const box = document.querySelector('[data-close]');
+  box?.addEventListener('click', () => { brainPanelOpen = false; });
+}
+document.getElementById('btnBrain').addEventListener('click', openBrainPanel);
+
+/* ---------- Installierbare App (PWA) ---------- */
+let installEvt = null;
+addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; document.getElementById('btnInstall').hidden = false; });
+document.getElementById('btnInstall').addEventListener('click', async () => {
+  if (!installEvt) return;
+  installEvt.prompt();
+  await installEvt.userChoice;
+  installEvt = null; document.getElementById('btnInstall').hidden = true;
+});
+
+ui.chips(['Wo bin ich?', 'Wo ist Dortmund?', 'Flüge über Frankfurt', 'Suche Flug LH400', 'Zeig mir einen PS5-Controller', 'Öffne ihn', 'Wie hoch ist der Eiffelturm?', 'Merke dir, dass ich Fußball mag'], t => assistant.handle(t));
 ui.startClock();
 
 /* ================= Boot ================= */
@@ -412,4 +485,8 @@ bootBtn.addEventListener('click', async () => {
   const g = h < 5 ? 'Guten Abend' : h < 11 ? 'Guten Morgen' : h < 18 ? 'Guten Tag' : 'Guten Abend';
   assistant.say(`${g}. Alle Systeme sind online. Wie kann ich helfen?`);
   try { await app.myLocation(); } catch { ui.setLocation('Standort unbekannt', ''); ui.setStat('stLink', 'BEREIT'); }
+  // KI-Kern automatisch starten, wenn er schon einmal geladen wurde (kommt dann aus dem Cache)
+  const saved = memory.model();
+  if (saved && Brain.supported()) brain.load(saved).catch(() => {});
+  else if (Brain.supported()) ui.log('ai', 'Tipp: Aktivieren Sie meinen KI-Kern (🧠 unten), dann kann ich frei mit Ihnen reden und jede Frage beantworten – ganz ohne API-Key.');
 });

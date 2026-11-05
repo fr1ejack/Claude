@@ -171,3 +171,26 @@ export function describePlane(p) {
   };
 }
 function titleCase(s) { return s.toLowerCase().replace(/\b[a-z]/g, c => c.toUpperCase()).replace(/\b(A|B)(\d)/g, '$1$2'); }
+
+/* ---------------- Freie Internet-Recherche (ohne API-Key) ----------------
+ * Wikipedia (de + en) Volltextsuche mit Auszügen, plus DuckDuckGo-Sofortantworten.
+ * Die Ergebnisse speichert Jarvis als "Erfahrungen" in seinem Gedächtnis. */
+async function wikiSearch(lang, q, n = 3) {
+  const d = await j(`https://${lang}.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(q)}&gsrlimit=${n}&prop=extracts|pageimages|info&inprop=url&exintro=1&explaintext=1&exchars=1200&piprop=thumbnail&pithumbsize=800&format=json&origin=*`, {}, 9000);
+  const pages = Object.values(d?.query?.pages || {}).sort((a, b) => (a.index || 0) - (b.index || 0));
+  return pages.filter(p => p.extract).map(p => ({ title: p.title, text: p.extract, url: p.fullurl, image: p.thumbnail?.source, src: `Wikipedia (${lang})` }));
+}
+async function ddgInstant(q) {
+  const d = await j(`https://api.duckduckgo.com/?q=${encodeURIComponent(q)}&format=json&no_html=1&skip_disambig=1&t=jarvis-holo`, {}, 6000);
+  const out = [];
+  if (d.Answer) out.push({ title: q, text: String(d.Answer), url: '', src: 'DuckDuckGo' });
+  if (d.AbstractText) out.push({ title: d.Heading || q, text: d.AbstractText, url: d.AbstractURL, image: d.Image ? 'https://duckduckgo.com' + d.Image : '', src: d.AbstractSource || 'DuckDuckGo' });
+  return out;
+}
+export async function webResearch(q) {
+  const [de, ddg] = await Promise.allSettled([wikiSearch('de', q), ddgInstant(q)]);
+  let res = [...(ddg.value || []), ...(de.value || [])];
+  if (res.length < 2) { try { res.push(...await wikiSearch('en', q, 2)); } catch { /* */ } }
+  const seen = new Set();
+  return res.filter(r => r.text && !seen.has(r.title) && seen.add(r.title)).slice(0, 4);
+}

@@ -2,6 +2,7 @@ import * as S from './services.js';
 import * as ui from './ui.js';
 import { findObject } from './objects.js';
 import { fmt, fmtCoord, haversine, compass, esc } from './util.js';
+import { memory, keywords } from './memory.js';
 
 const STRIP_START = /^(hey |ok |okay |hallo )?(jarvis)[,!. ]*/;
 const FILLER = /\b(bitte|mal|doch|kurz|eigentlich|jetzt|gerade|einmal)\b/g;
@@ -18,8 +19,10 @@ function cleanSubject(s) {
 }
 
 export class Assistant {
-  constructor(app) {
+  constructor(app, brain) {
     this.app = app;
+    this.brain = brain;
+    this.convo = false;
     this.voiceOn = true;
     this.speaking = false;
     this.listening = false;
@@ -36,8 +39,8 @@ export class Assistant {
     const vs = speechSynthesis.getVoices().filter(v => v.lang && v.lang.toLowerCase().startsWith('de'));
     this.voice = vs.find(v => /male|männ|conrad|stefan|markus|daniel|google deutsch/i.test(v.name)) || vs[0] || null;
   }
-  say(text, { speak = true } = {}) {
-    ui.log('ai', text);
+  say(text, { speak = true, log = true } = {}) {
+    if (log) ui.log('ai', text);
     if (!speak || !this.voiceOn || !('speechSynthesis' in window)) return Promise.resolve();
     return new Promise(res => {
       try {
@@ -46,7 +49,7 @@ export class Assistant {
         u.lang = 'de-DE'; if (this.voice) u.voice = this.voice;
         u.rate = 1.04; u.pitch = 0.92;
         u.onstart = () => { this.speaking = true; ui.setState('SPRICHT', 'think'); };
-        u.onend = u.onerror = () => { this.speaking = false; ui.setState('ONLINE'); res(); };
+        u.onend = u.onerror = () => { this.speaking = false; ui.setState('ONLINE'); res(); if (this.convo && !this.wake) setTimeout(() => this.listenOnce(), 350); };
         speechSynthesis.speak(u);
         setTimeout(res, 25000);
       } catch { res(); }
@@ -115,6 +118,7 @@ export class Assistant {
 
   async process(text) {
     ui.setState('VERARBEITE …', 'think');
+    this.lastText = text;
     const app = this.app;
     let t = text.toLowerCase().replace(STRIP_START, '').replace(/[„“"]/g, '').replace(/ß/g, 'ss').trim();
     const tf = t.replace(FILLER, ' ').replace(/\s+/g, ' ').trim();
@@ -123,12 +127,28 @@ export class Assistant {
     if (/^(hallo|hi|hey|guten (morgen|tag|abend)|servus|moin|grüss gott|gruess gott)\b/.test(tf) && tf.split(' ').length <= 4)
       return this.say(`${greeting()}. Was kann ich für Sie tun?`);
     if (/(wer bist du|was kannst du|hilfe|was geht|funktionen)/.test(tf))
-      return this.say('Ich bin J.A.R.V.I.S. Ich kann Ihren Standort bestimmen, jeden Ort der Welt auf dem Holo-Globus zeigen, Flugzeuge in Echtzeit verfolgen und suchen, das Wetter abrufen, Wissen nachschlagen und Objekte als Hologramm darstellen – zum Beispiel einen Game-Controller, den ich auch für Sie öffnen kann.');
+      return this.say('Ich bin J.A.R.V.I.S. Mit aktiviertem KI-Kern beantworte ich jede Frage, recherchiere dafür selbst im Internet und merke mir, was ich lerne. Außerdem kann ich Ihren Standort bestimmen, jeden Ort der Welt auf dem Holo-Globus zeigen, Flugzeuge in Echtzeit verfolgen und suchen, das Wetter abrufen, Wissen nachschlagen und Objekte als Hologramm darstellen – zum Beispiel einen Game-Controller, den ich auch für Sie öffnen kann.');
     if (/(wie spät|wieviel uhr|wie viel uhr|uhrzeit)/.test(tf))
       return this.say(`Es ist ${new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} Uhr.`);
     if (/(welcher tag|welches datum|datum heute|den wievielten)/.test(tf))
       return this.say(`Heute ist ${new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}.`);
     if (/^(danke|vielen dank|dankeschön)/.test(tf)) return this.say('Jederzeit gern.');
+
+    // Gedächtnis & Regeln
+    const orig = text.replace(/^(hey |ok |okay |hallo )?jarvis[,!. ]*/i, '').trim();
+    let mm = orig.match(/^merk(?:e)?\s+(?:dir|euch)[,:]?\s+(?:bitte\s+)?(?:dass\s+)?(.+)$/i);
+    if (mm) { memory.addFact(mm[1].replace(/[.!]+$/, '')); return this.say(`Verstanden. Ich habe mir gemerkt: ${mm[1]}`); }
+    if (/(was weisst du (alles )?über mich|was hast du dir gemerkt|was weisst du von mir)/.test(tf)) {
+      const f = memory.facts();
+      return this.say(f.length ? `Ich weiß Folgendes über Sie: ${f.slice(-8).map(x => x.text).join('. ')}.` : 'Sie haben mir noch nichts über sich erzählt. Sagen Sie zum Beispiel: Merke dir, dass ich Lukas heiße.');
+    }
+    if (/(vergiss alles|lösche dein gedächtnis|gedächtnis löschen)/.test(tf)) { memory.clear(); this.brain.reset(); return this.say('Erledigt. Mein Gedächtnis ist leer – Ihre Regeln bleiben bestehen.'); }
+    mm = orig.match(/^(?:ab jetzt|von nun an|ab sofort|neue regel:?|regel:)\s*,?\s*(.+)$/i) || orig.match(/^((?:hör|hoer) auf .+|mach (?:das )?nicht mehr.*|sag nie wieder .+|unterlass(?:e)? .+)$/i);
+    if (mm) {
+      const rules = memory.rules();
+      memory.setRules((rules ? rules + '\n' : '') + '- ' + mm[1].replace(/[.!]+$/, ''));
+      return this.say(`Verstanden. Ab jetzt gilt: ${mm[1]}`);
+    }
 
     // Objekt öffnen / schließen
     const lib = findObject(tf);
@@ -241,9 +261,39 @@ export class Assistant {
       if (place && place.importance > 0.3) return this.showPlace(place);
       return this.knowledge(tf, true);
     }
-    const k = await S.wiki(tf).catch(() => null);
-    if (k) return this.knowledge(tf, true, k);
-    return this.say('Das habe ich leider nicht verstanden. Versuchen Sie: „Wo ist Dortmund?“, „Flüge über Frankfurt“ oder „Zeig mir einen PS5-Controller“.');
+    return this.think(text);
+  }
+
+  /** Freie Frage: im Internet recherchieren, Erfahrungen merken, mit dem lokalen Sprachmodell antworten */
+  async think(text, { holo = false } = {}) {
+    const b = this.brain;
+    const q = keywords(text).join(' ') || text;
+    if (!b.ready) {
+      if (b.state === 'loading') return this.say(`Mein KI-Kern lädt noch – ${Math.round(b.progress * 100)} Prozent. Einen Moment bitte.`);
+      const k = await S.wiki(q).catch(() => null);
+      if (k) return this.wikiKnowledge(q, holo, k);
+      return this.say('Für freie Gespräche brauche ich meinen KI-Kern. Aktivieren Sie ihn über den Knopf „KI-KERN“ – er läuft direkt in Ihrem Browser, ganz ohne API-Key.');
+    }
+    ui.setState('RECHERCHIERT …', 'think');
+    const research = await S.webResearch(q).catch(() => []);
+    memory.learn(research);
+    const mem = memory.relevant(text).filter(e => !research.some(r => r.title === e.title));
+    const ctx = [...research.map(r => `• ${r.title} (${r.src}): ${r.text}`), ...mem.map(e => `• Erinnerung – ${e.title}: ${e.text}`)].join('\n').slice(0, 3500);
+    if (holo && research[0]?.image) await this.app.showImageHolo(research[0].title, research[0].image);
+    if (research.length) {
+      ui.showPanel('RECHERCHE', `${research[0].image ? `<img class="holo-img" src="${esc(research[0].image)}" alt="">` : ''}<p class="hint">Jarvis hat ${research.length} Quelle(n) gelesen und sich gemerkt:</p><ul class="flist">${research.map(r => `<li><span class="cs">${esc(r.title)}</span><span class="alt">${esc(r.src)}</span><span class="meta">${esc(r.text.slice(0, 160))}…</span></li>`).join('')}</ul><p class="hint">Gedächtnis: ${memory.experiences().length} Erfahrungen · ${memory.facts().length} Fakten über Sie</p>`);
+    }
+    ui.setState('DENKT …', 'think');
+    const el = ui.log('ai', '…');
+    const loc = this.app.userLoc ? [this.app.userLoc.city, this.app.userLoc.region].filter(Boolean).join(', ') : '';
+    const ans = await b.answer(text, { context: ctx, location: loc, onToken: tk => ui.setLogText(el, tk) });
+    ui.setLogText(el, ans);
+    return this.say(ans || 'Dazu fällt mir leider nichts ein.', { log: false });
+  }
+
+  knowledge(subj, holo, pre) {
+    if (this.brain.ready) return this.think(this.lastText || subj, { holo });
+    return this.wikiKnowledge(subj, holo, pre);
   }
 
   async showPlace(place) {
@@ -262,7 +312,7 @@ export class Assistant {
     return this.say(`${place.name} liegt ${region ? 'in ' + region : 'hier'}, bei ${fmt(Math.abs(place.lat), 2)} Grad ${place.lat >= 0 ? 'Nord' : 'Süd'} und ${fmt(Math.abs(place.lon), 2)} Grad ${place.lon >= 0 ? 'Ost' : 'West'}.${dist}`);
   }
 
-  async knowledge(subj, holo, pre) {
+  async wikiKnowledge(subj, holo, pre) {
     const k = pre || await S.wiki(subj).catch(() => null);
     if (!k) return this.say(`Zu „${subj}“ habe ich leider nichts gefunden.`);
     if (k.coords && /(stadt|gemeinde|land|staat|berg|see|fluss|insel|gebäude|turm|bauwerk)/i.test(k.extract || '')) {

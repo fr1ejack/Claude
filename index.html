@@ -8,6 +8,15 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#01050b">
+  <meta name="description" content="J.A.R.V.I.S. – holografischer KI-Assistent mit 3D-Globus, Live-Flugdaten und Sprachsteuerung">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="JARVIS">
   <script type="importmap">
   {
     "imports": {
@@ -61,6 +70,8 @@
       <div><span class="lbl">FLUGZIELE</span><span id="stFlights">0</span></div>
       <div><span class="lbl">DATENLINK</span><span id="stLink">BEREIT</span></div>
       <div><span class="lbl">FPS</span><span id="stFps">--</span></div>
+      <div><span class="lbl">KI-KERN</span><span id="stBrain">AUS</span></div>
+      <div><span class="lbl">GEDÄCHTNIS</span><span id="stMem">0</span></div>
     </div>
   </aside>
 
@@ -81,12 +92,20 @@
       <button type="button" id="tglFlights" class="tgl">✈ FLUGVERKEHR</button>
       <button type="button" id="tglVoice" class="tgl on">🔊 STIMME</button>
       <button type="button" id="tglWake" class="tgl">◉ „JARVIS“-WECKWORT</button>
+      <button type="button" id="btnBrain" class="tgl">🧠 KI-KERN</button>
+      <button type="button" id="tglConvo" class="tgl">💬 GESPRÄCH</button>
       <button type="button" id="btnHome" class="tgl">⟲ KERN</button>
+      <button type="button" id="btnInstall" class="tgl" hidden>⤓ APP INSTALLIEREN</button>
     </div>
   </footer>
 
   <div id="attrib">Karte © OpenStreetMap-Mitwirkende © CARTO · Flugdaten adsb.lol / OpenSky Network · Geodaten Natural Earth · Wikipedia · Open-Meteo</div>
 
   <script type="module" src="js/main.js"></script>
+  <script>
+    // Installierbare App: Service Worker unabhängig vom Hauptprogramm registrieren
+    if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost'))
+      navigator.serviceWorker.register('./sw.js').catch(e => console.warn('Service Worker:', e));
+  </script>
 </body>
 </html>
