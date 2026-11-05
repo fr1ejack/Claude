@@ -1,0 +1,7 @@
+{
+  "name": "mausefallen-auto",
+  "private": true,
+  "type": "module",
+  "scripts": { "export": "node export.mjs" },
+  "dependencies": { "three": "0.160.0" }
+}

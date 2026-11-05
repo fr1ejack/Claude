@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mausefallen-Auto 3D</title>
+<style>
+  :root {
+    --bg: #f4f2ee; --panel: #ffffffee; --text: #1d1d1f; --muted: #6b6b70;
+    --accent: #e8661a; --line: #00000018; --scene: #ece9e3;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #17181a; --panel: #23252aee; --text: #ececee; --muted: #9a9ba1;
+      --accent: #ff8a3d; --line: #ffffff1c; --scene: #1d1f22;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #17181a; --panel: #23252aee; --text: #ececee; --muted: #9a9ba1;
+    --accent: #ff8a3d; --line: #ffffff1c; --scene: #1d1f22;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; overflow: hidden; }
+  #szene { position: fixed; inset: 0; }
+  .panel { position: fixed; top: 16px; left: 16px; width: min(330px, calc(100vw - 32px));
+    background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+    padding: 14px 16px; backdrop-filter: blur(8px); max-height: calc(100vh - 32px); overflow: auto; }
+  h1 { font-size: 17px; margin: 0 0 2px; }
+  .sub { color: var(--muted); margin: 0 0 12px; font-size: 13px; }
+  dl { display: grid; grid-template-columns: 1fr auto; gap: 3px 12px; margin: 0 0 12px; }
+  dt { color: var(--muted); } dd { margin: 0; font-variant-numeric: tabular-nums; text-align: right; }
+  label { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  button { font: inherit; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--line);
+    background: transparent; color: var(--text); cursor: pointer; }
+  button.primary { background: var(--accent); color: #fff; border-color: transparent; }
+  .weg { font-size: 22px; font-weight: 650; font-variant-numeric: tabular-nums; color: var(--accent); }
+  .lbl { font-size: 11px; padding: 2px 6px; border-radius: 6px; background: var(--panel);
+    border: 1px solid var(--line); color: var(--text); white-space: nowrap; pointer-events: none; }
+  .hint { color: var(--muted); font-size: 12px; margin-top: 10px; }
+  .kamera { border-top: 1px solid var(--line); margin-top: 10px; padding-top: 8px; }
+  .ktitel { font-weight: 600; }
+  .kamera .row { margin-top: 6px; }
+  .kamera button { padding: 4px 9px; font-size: 13px; }
+  .klapp { display: none; }
+  @media (max-width: 600px) {
+    .klapp { display: inline-block; position: absolute; top: 10px; right: 10px; }
+    .panel.zu > :not(h1):not(.klapp) { display: none; }
+  }
+  @media (max-width: 600px) {
+    .panel { top: auto; bottom: 16px; max-height: 45vh; }
+    dl { display: none; }
+  }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<div id="szene"></div>
+<div class="panel">
+  <button class="klapp" id="klapp" aria-label="Feld ein-/ausklappen">–</button>
+  <h1>Mausefallen-Auto „Leichtläufer 50“</h1>
+  <p class="sub">Angetrieben nur von einer Standard-Mausefalle</p>
+  <dl>
+    <dt>Gesamtmasse</dt><dd>≈ 51 g</dd>
+    <dt>Länge × Breite × Höhe</dt><dd>480 × 100 × 200 mm</dd>
+    <dt>Hinterräder</dt><dd>Ø 200 mm Depron</dd>
+    <dt>Übersetzung</dt><dd>57 : 1</dd>
+    <dt>Hebel</dt><dd>350 mm Carbon</dd>
+    <dt>Berechnete Strecke</dt><dd>≈ 69 m</dd>
+  </dl>
+  <label for="t">Hebelstellung (gespannt → abgelaufen)</label>
+  <input id="t" type="range" min="0" max="1" step="0.001" value="0">
+  <div>Gefahrene Strecke: <span class="weg" id="weg">0,0 m</span></div>
+  <div class="row">
+    <button class="primary" id="play">▶ Fahren</button>
+    <button id="reset">Spannen</button>
+    <button id="stl">STL laden</button>
+  </div>
+  <label><input type="checkbox" id="beschr" checked> Beschriftungen</label>
+  <div class="kamera">
+    <div class="ktitel">Kamera</div>
+    <div class="row">
+      <button data-ansicht="schraeg">3D</button>
+      <button data-ansicht="seite">Seite</button>
+      <button data-ansicht="oben">Oben</button>
+      <button data-ansicht="vorn">Vorn</button>
+      <button data-ansicht="hinten">Hinten</button>
+      <button data-ansicht="nah">Falle nah</button>
+    </div>
+    <label><input type="checkbox" id="rund"> Automatisch um das Auto kreisen</label>
+  </div>
+  <p class="hint">Maus: ziehen = drehen · Mausrad = zoomen · rechte Taste = verschieben<br>
+  Touch: 1 Finger = drehen · 2 Finger = zoomen/verschieben<br>
+  Tastatur: Pfeiltasten = drehen · W/S = zoomen · A/D = seitlich · R/F = hoch/runter</p>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+import { STLExporter } from 'three/addons/exporters/STLExporter.js';
+import { baueAuto } from './modell.js';
+
+const el = document.getElementById('szene');
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+el.appendChild(renderer.domElement);
+const labelR = new CSS2DRenderer();
+labelR.domElement.style.position = 'absolute';
+labelR.domElement.style.inset = '0';
+labelR.domElement.style.pointerEvents = 'none';
+el.appendChild(labelR.domElement);
+
+const scene = new THREE.Scene();
+const css = () => getComputedStyle(document.documentElement);
+scene.background = new THREE.Color(css().getPropertyValue('--scene').trim());
+
+const cam = new THREE.PerspectiveCamera(35, 1, 1, 5000);
+cam.position.set(520, 420, 820);
+const ctrl = new OrbitControls(cam, renderer.domElement);
+ctrl.target.set(215, 75, 0);
+ctrl.enableDamping = true;
+ctrl.dampingFactor = 0.08;
+ctrl.minDistance = 60;           // nah ran an die Falle
+ctrl.maxDistance = 3000;
+ctrl.maxPolarAngle = Math.PI * 0.495; // nicht unter den Boden
+ctrl.screenSpacePanning = true;
+ctrl.autoRotateSpeed = 1.2;
+
+// Vordefinierte Kamerapositionen (Welt: x vorn, y oben, z = rechte Fahrzeugseite)
+const ANSICHTEN = {
+  schraeg: { pos: [520, 420, 820], ziel: [215, 75, 0] },
+  seite:   { pos: [230, 110, 1100], ziel: [230, 100, 0] },
+  oben:    { pos: [230, 1150, 0.1], ziel: [230, 0, 0] },
+  vorn:    { pos: [1150, 160, 0], ziel: [200, 100, 0] },
+  hinten:  { pos: [-650, 260, 260], ziel: [150, 90, 0] },
+  nah:     { pos: [470, 200, 170], ziel: [355, 110, 0] },
+};
+let flug = null;
+function fliegeZu(name) {
+  const a = ANSICHTEN[name];
+  flug = { t: 0, p0: cam.position.clone(), z0: ctrl.target.clone(),
+    p1: new THREE.Vector3(...a.pos), z1: new THREE.Vector3(...a.ziel) };
+}
+document.querySelectorAll('[data-ansicht]').forEach((b) =>
+  b.addEventListener('click', () => fliegeZu(b.dataset.ansicht)));
+document.getElementById('rund').addEventListener('change', (e) => (ctrl.autoRotate = e.target.checked));
+document.getElementById('klapp').addEventListener('click', (e) => {
+  const p = document.querySelector('.panel');
+  p.classList.toggle('zu'); e.target.textContent = p.classList.contains('zu') ? '+' : '–';
+});
+
+// Tastatur: Pfeile drehen, W/S zoomen, A/D seitlich, R/F hoch/runter
+const tasten = new Set();
+addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT' && e.target.type === 'range') return;
+  tasten.add(e.key.toLowerCase());
+  if (e.key.startsWith('Arrow')) e.preventDefault();
+});
+addEventListener('keyup', (e) => tasten.delete(e.key.toLowerCase()));
+const kugel = new THREE.Spherical(), tmp = new THREE.Vector3();
+function tastaturKamera(dt) {
+  if (!tasten.size) return;
+  tmp.subVectors(cam.position, ctrl.target);
+  kugel.setFromVector3(tmp);
+  const w = 1.6 * dt;
+  if (tasten.has('arrowleft')) kugel.theta -= w;
+  if (tasten.has('arrowright')) kugel.theta += w;
+  if (tasten.has('arrowup')) kugel.phi -= w;
+  if (tasten.has('arrowdown')) kugel.phi += w;
+  if (tasten.has('w')) kugel.radius *= 1 - 1.2 * dt;
+  if (tasten.has('s')) kugel.radius *= 1 + 1.2 * dt;
+  kugel.phi = Math.min(Math.max(kugel.phi, 0.05), ctrl.maxPolarAngle);
+  kugel.radius = Math.min(Math.max(kugel.radius, ctrl.minDistance), ctrl.maxDistance);
+  tmp.setFromSpherical(kugel);
+  // seitlich / hoch verschieben (Ziel und Kamera gemeinsam)
+  const seitlich = new THREE.Vector3().crossVectors(cam.up, tmp).normalize();
+  const v = 300 * dt * (kugel.radius / 800);
+  const d = new THREE.Vector3();
+  if (tasten.has('a')) d.addScaledVector(seitlich, -v);
+  if (tasten.has('d')) d.addScaledVector(seitlich, v);
+  if (tasten.has('r')) d.y += v;
+  if (tasten.has('f')) d.y -= v;
+  ctrl.target.add(d);
+  cam.position.copy(ctrl.target).add(tmp);
+}
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0x8a8070, 1.6));
+const sun = new THREE.DirectionalLight(0xffffff, 2.2);
+sun.position.set(-300, 700, 400);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+Object.assign(sun.shadow.camera, { left: -500, right: 500, top: 500, bottom: -500, far: 2000 });
+scene.add(sun);
+const boden = new THREE.Mesh(new THREE.PlaneGeometry(4000, 4000),
+  new THREE.ShadowMaterial({ opacity: 0.18 }));
+boden.rotation.x = -Math.PI / 2; boden.receiveShadow = true;
+scene.add(boden);
+const grid = new THREE.GridHelper(1400, 28, 0x888888, 0x888888);
+grid.material.opacity = 0.15; grid.material.transparent = true;
+grid.position.x = 230;
+scene.add(grid);
+
+const { welt, auto, teile, setzeStellung } = baueAuto(THREE);
+welt.traverse((o) => { if (o.isMesh) { o.castShadow = true; } });
+scene.add(welt);
+
+const beschriftung = {
+  hebel: 'Hebel 350 mm (Carbonrohr 4×3)',
+  falle: 'Mausefalle (gekürzt)',
+  radHinten: 'Hinterrad Ø200 (Depron 6 mm)',
+  radVorn: 'Vorderrad Ø100 (Balsa)',
+  holm: 'Rahmenholm (Carbonrohr 4×3)',
+  lagerbock: 'Lagerbock + Kugellager 683',
+  gabel: 'Gabel (Balsa 3 mm)',
+  schnur: 'Zugschnur auf 3-mm-Achse',
+  lauf: 'Lauffläche (Ballongummi)',
+};
+const labels = [];
+for (const [k, text] of Object.entries(beschriftung)) {
+  const div = document.createElement('div');
+  div.className = 'lbl'; div.textContent = text;
+  const o = new CSS2DObject(div);
+  teile[k].geometry.computeBoundingBox();
+  teile[k].geometry.boundingBox.getCenter(o.position);
+  if (k === 'hebel') o.position.x += 60;
+  if (k === 'radHinten') o.position.z += 70;
+  if (k === 'lauf') o.position.z -= 90;
+  teile[k].add(o);
+  labels.push(o);
+}
+document.getElementById('beschr').addEventListener('change', (e) =>
+  labels.forEach((l) => (l.visible = e.target.checked)));
+
+const slider = document.getElementById('t');
+const wegEl = document.getElementById('weg');
+// Antriebsstrecke laut berechnung.py ~ 39,6 m, danach rollt das Auto aus bis ~ 69 m
+const GESAMT = 69.1;
+let ausrollen = 0;
+function update() {
+  const w = setzeStellung(+slider.value, ausrollen * 1000);
+  wegEl.textContent = w.toFixed(1).replace('.', ',') + ' m';
+}
+slider.addEventListener('input', () => { ausrollen = 0; update(); });
+
+let laeuft = false, tAlt = 0;
+const play = document.getElementById('play');
+play.onclick = () => {
+  laeuft = !laeuft; play.textContent = laeuft ? '❚❚ Pause' : '▶ Fahren';
+  if (laeuft && +slider.value >= 1 && ausrollen > 0) { slider.value = 0; ausrollen = 0; }
+  tAlt = performance.now();
+};
+document.getElementById('reset').onclick = () => {
+  laeuft = false; play.textContent = '▶ Fahren'; slider.value = 0; ausrollen = 0; update();
+};
+// In eingebetteten Ansichten (iframe) sind Downloads gesperrt -> Knopf ausblenden
+if (window.self !== window.top) document.getElementById('stl').style.display = 'none';
+document.getElementById('stl').onclick = () => {
+  const data = new STLExporter().parse(welt, { binary: true });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([data], { type: 'model/stl' }));
+  a.download = 'mausefallen_auto.stl'; a.click();
+};
+
+function resize() {
+  const w = el.clientWidth, h = el.clientHeight;
+  renderer.setSize(w, h); labelR.setSize(w, h);
+  cam.aspect = w / h;
+  // Auf breiten Bildschirmen das Modell neben das Info-Feld schieben
+  const versatz = w > 800 && !document.body.classList.contains('ohne-panel') ? 170 : 0;
+  if (versatz) cam.setViewOffset(w, h, -versatz, 0, w, h); else cam.clearViewOffset();
+  cam.updateProjectionMatrix();
+}
+addEventListener('resize', resize);
+if (new URLSearchParams(location.search).has('bild')) {
+  document.body.classList.add('ohne-panel');
+  document.querySelector('.panel').style.display = 'none';
+}
+resize();
+
+let tKam = performance.now();
+renderer.setAnimationLoop((now) => {
+  const dtK = Math.min((now - tKam) / 1000, 0.05); tKam = now;
+  tastaturKamera(dtK);
+  if (flug) {
+    flug.t = Math.min(1, flug.t + dtK / 0.9);
+    const e = flug.t < 0.5 ? 2 * flug.t * flug.t : 1 - (-2 * flug.t + 2) ** 2 / 2;
+    cam.position.lerpVectors(flug.p0, flug.p1, e);
+    ctrl.target.lerpVectors(flug.z0, flug.z1, e);
+    if (flug.t >= 1) flug = null;
+  }
+  if (laeuft) {
+    const dt = Math.min((now - tAlt) / 1000, 0.05); tAlt = now;
+    if (+slider.value < 1) slider.value = Math.min(1, +slider.value + dt * 0.12);
+    else {
+      const geschafft = 39.6 + ausrollen;
+      if (geschafft < GESAMT) ausrollen += dt * Math.max(0.4, 3 * (1 - geschafft / GESAMT));
+      else { laeuft = false; play.textContent = '▶ Fahren'; }
+    }
+    update();
+  }
+  ctrl.update();
+  renderer.render(scene, cam); labelR.render(scene, cam);
+});
+update();
+window.__bereit = true;
+</script>
+</body>
+</html>
