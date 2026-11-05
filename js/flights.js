@@ -56,7 +56,7 @@ export class FlightLayer {
     p._lat = d.lat; p._lon = d.lon;
     return p;
   }
-  radius(p) { return 1.0005 + p.altFt * 0.3048 / 6371000 * 1.6; }
+  radius(p) { return 1.00001 + p.altFt * 0.3048 / 6371000 * 1.6; }
 
   update(alt, fade) {
     this.mesh.visible = this.visible && fade > 0.02;
@@ -64,7 +64,7 @@ export class FlightLayer {
     for (const l of this.routeLabels) l.visible = this.route.visible && fade > 0.6;
     if (!this.mesh.visible) return;
     this.mesh.material.opacity = 0.95 * fade;
-    const s = clamp(alt * 0.018, 0.00045, 0.022);
+    const s = clamp(alt * 0.018, 0.000006, 0.022);
     const t = Date.now();
     let i = 0;
     for (const p of this.list) {

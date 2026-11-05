@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 
 export const DEG = Math.PI / 180;
+/** Läuft die App als privates claude.ai-Artifact? Dort sind Online-Dienste, Mikrofon und GPS gesperrt. */
+export const IS_ARTIFACT = typeof window !== 'undefined' && !!(window.claude && typeof window.claude.use === 'function');
 /** Gemeinsame Uniforms (Zeit) für alle Hologramm-Shader */
 export const U = { time: { value: 0 } };
 

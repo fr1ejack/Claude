@@ -2,20 +2,35 @@
 
 Ein Jarvis-artiger Sprachassistent im Browser mit blauem, holografischem 3D-Design (Three.js + Bloom).
 
-## Veröffentlichen (für alle nutzbar)
+## Zwei Versionen
 
-Die App ist eine **installierbare Web-App (PWA)**: Andere öffnen einfach den Link und können Jarvis
-auf PC, Android oder iPhone wie eine normale App installieren (Chrome/Edge: Knopf „⤓ APP INSTALLIEREN“ oder
-Adressleiste → Installieren · iPhone: Teilen → „Zum Home-Bildschirm“).
+| | Private claude.ai-Version | Vollversion (eigene Website) |
+|---|---|---|
+| Wer kann sie öffnen? | Nur Personen, mit denen du den Link über *Teilen* auf claude.ai teilst | Nur eingeladene E-Mail-Adressen (Cloudflare Access) |
+| Holo-Globus, Hologramme, Explosionsansicht | ✓ | ✓ |
+| Städtesuche | ✓ (eingebaut, ~29.000 Städte) | ✓ (weltweit, jede Adresse) |
+| Freie Antworten | ✓ über Claude (Konto des Betrachters) | ✓ lokales Modell im Browser |
+| Live-Flüge, Wetter, Internet-Recherche | – | ✓ |
+| Straßenkarte und **3D-Gebäude 1:1** (OpenStreetMap) | – | ✓ |
+| Mikrofon, GPS, als App installierbar | – | ✓ |
 
-**Mit GitHub Pages (kostenlos):**
-1. Branch in `main` mergen – der Workflow `.github/workflows/pages.yml` veröffentlicht dann automatisch.
-2. Einmalig auf GitHub: *Settings → Pages → Source: „GitHub Actions“*.
-3. Die Adresse lautet dann `https://fr1ejack.github.io/Claude/`.
+Die private Version entsteht aus `artifact.html` (wird mit `python3 tools/build_artifact.py` aus `index.html` erzeugt).
 
-> Hinweis: GitHub Pages für **private** Repos gibt es nur mit GitHub Pro/Team. Kostenlose Alternativen:
-> Repo auf *öffentlich* stellen, oder den Ordner bei [Netlify Drop](https://app.netlify.com/drop) bzw.
-> Cloudflare Pages hochladen (einfach den Projektordner hineinziehen). HTTPS ist Pflicht – sonst gehen Mikrofon und Standort nicht.
+## Vollversion privat veröffentlichen (Cloudflare, kostenlos)
+
+Das Repo kann dabei **privat bleiben**.
+
+1. Auf <https://dash.cloudflare.com> kostenlos registrieren.
+2. *Workers & Pages → Erstellen → Pages → Mit Git verbinden* → GitHub verbinden → Repo `fr1ejack/Claude` wählen.
+3. Produktionszweig: `main` (bzw. diesen Branch) · Framework: *Keins* · Build-Befehl: leer lassen · Ausgabeverzeichnis: `/` → *Speichern und bereitstellen*.
+   Du bekommst eine Adresse wie `https://jarvis-xyz.pages.dev`.
+4. Zugriff beschränken: *Zero Trust → Access → Anwendungen → Hinzufügen → Self-hosted* →
+   Domain = deine `….pages.dev`-Adresse → Richtlinie *Allow* mit *Emails* = die Adressen deiner Freunde (und deine).
+5. Ab jetzt muss jeder, der den Link öffnet, einen Code eingeben, der an seine E-Mail geht. Nur eingeladene Adressen kommen rein.
+6. Auf dem Handy: Link öffnen → iPhone: Teilen → „Zum Home-Bildschirm“ · Android: Menü → „App installieren“.
+
+**3D-Gebäude:** Beim Heranzoomen unter ca. 25 km Höhe lädt Jarvis die Gebäude der Umgebung aus OpenStreetMap
+(Grundriss + Höhe bzw. Stockwerke) und baut sie als Hologramm auf, z. B. „Zeig mir den Signal Iduna Park“.
 
 ## Starten (lokal)
 

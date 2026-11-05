@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
-import { U, DEG, ll2v, clamp, smooth, esc, fmtCoord } from './util.js';
+import { U, DEG, ll2v, clamp, smooth, esc, fmtCoord, IS_ARTIFACT } from './util.js';
 
-const TOPO_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-50m.json';
+const TOPO_URL = new URL('../data/countries-50m.json', import.meta.url).href;
 const TILE_URL = (z, x, y) => `https://${'abcd'[(x + y) % 4]}.basemaps.cartocdn.com/dark_all/${z}/${x}/${y}.png`;
 
 /* ---------- TopoJSON-Dekodierung (ohne Abhängigkeit) ---------- */
@@ -63,6 +63,7 @@ export class Globe {
         }`,
       transparent: true,
     }));
+    this.ocean.renderOrder = -2; // immer zuerst zeichnen, sonst verdeckt die Kugel je nach Blickwinkel die Punkte
     this.group.add(this.ocean);
 
     // Atmosphäre
@@ -186,6 +187,31 @@ export class Globe {
     onProgress?.(`Globus bereit · ${pos.length / 3 | 0} Landpunkte`);
   }
 
+  /* ---------- Städte als leuchtende Punkte ---------- */
+  addCities(rows) {
+    const pos = [], size = [];
+    for (const [, , lat, lon, pop] of rows) {
+      if (pop < 40000) continue;
+      const v = ll2v(lat, lon, 1.00002); pos.push(v.x, v.y, v.z); size.push(Math.min(4.5, 1.2 + Math.log10(pop / 40000) * 1.6));
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute('aSize', new THREE.Float32BufferAttribute(size, 1));
+    this.cityMat = new THREE.ShaderMaterial({
+      uniforms: { uFade: { value: 0 }, uTime: U.time },
+      vertexShader: `attribute float aSize; varying float vA;
+        void main(){ vec4 mv = modelViewMatrix*vec4(position,1.0); gl_Position = projectionMatrix*mv; gl_PointSize = aSize * 1.25;
+          vec3 wp=(modelMatrix*vec4(position,1.0)).xyz; vec3 wn=normalize(mat3(modelMatrix)*position);
+          vA = smoothstep(0.0, 0.3, dot(wn, normalize(cameraPosition-wp))); }`,
+      fragmentShader: `uniform float uFade; varying float vA; void main(){ float d=length(gl_PointCoord-0.5); if(d>0.5) discard;
+          gl_FragColor = vec4(vec3(0.75,0.95,1.0), vA*uFade*smoothstep(0.5,0.0,d)); }`,
+      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+    });
+    this.cities = new THREE.Points(g, this.cityMat);
+    this.cities.renderOrder = 3;
+    this.group.add(this.cities);
+  }
+
   /* ---------- Marker ---------- */
   addMarker(lat, lon, title, sub = '', kind = 'place') {
     const g = new THREE.Group();
@@ -221,7 +247,7 @@ export class Globe {
 
   /* ---------- Holografische Kachelkarte (Mercator-Kacheln auf Kugelsegment) ---------- */
   requestPatch(lat, lon, alt, aspect) {
-    if (alt > 0.95) return;
+    if (alt > 0.95 || IS_ARTIFACT) return;
     const viewDeg = alt * 0.83 / DEG * Math.max(1, aspect) * 1.2;
     const z = clamp(Math.round(Math.log2(360 / (viewDeg * 1.5 / 6))), 4, 16);
     const n = 2 ** z;
@@ -257,7 +283,7 @@ export class Globe {
       const tx = x0 + T * i / SEG, ty = y0 + T * j / SEG;
       const lon = tx / n * 360 - 180;
       const lat = Math.atan(Math.sinh(Math.PI * (1 - 2 * ty / n))) / DEG;
-      ll2v(lat, lon, 1.0006, v); P.push(v.x, v.y, v.z); UV.push(i / SEG, 1 - j / SEG);
+      ll2v(lat, lon, 1.000004, v); P.push(v.x, v.y, v.z); UV.push(i / SEG, 1 - j / SEG);
     }
     for (let j = 0; j < SEG; j++) for (let i = 0; i < SEG; i++) {
       const a = j * (SEG + 1) + i, b = a + 1, c = a + SEG + 1, d = c + 1;
@@ -298,11 +324,12 @@ export class Globe {
     this.fade.value = fade;
     const near = smooth(0.06, 0.5, alt);
     if (this.dotMat) {
-      this.dotMat.uniforms.uFade.value = fade * (0.25 + 0.75 * near);
+      this.dotMat.uniforms.uFade.value = fade * (0.25 + 0.75 * near) * smooth(0.012, 0.15, alt);
       this.dotMat.uniforms.uScale.value = heightPx / (2 * Math.tan(camera.fov * DEG / 2));
     }
-    if (this.lineMat) this.lineMat.opacity = fade * (0.25 + 0.4 * near);
+    if (this.lineMat) this.lineMat.opacity = fade * (0.25 + 0.4 * near) * smooth(0.006, 0.08, alt);
     this.ocean.material.uniforms.uGrid.value = 0.4 + 0.6 * near;
+    if (this.cityMat) this.cityMat.uniforms.uFade.value = fade * (IS_ARTIFACT ? 1 : smooth(0.6, 1.2, alt)) * 0.5;
     // HUD-Ringe
     const hudF = smooth(0.9, 1.8, alt) * fade;
     this.hud.visible = hudF > 0.01;
@@ -321,7 +348,7 @@ export class Globe {
       if (k <= 0) { this.group.remove(this._dying); this._dying.geometry.dispose(); this._dying.material.uniforms.uMap.value.dispose(); this._dying.material.dispose(); this._dying = null; }
     }
     // Marker skalieren & verdecken
-    const s = clamp(alt * 0.12, 0.0012, 0.22);
+    const s = clamp(alt * 0.12, 0.00002, 0.22);
     const wp = new THREE.Vector3(), wn = new THREE.Vector3(), cd = new THREE.Vector3();
     for (const m of this.markers) {
       const age = clamp((now - m.born) / 900, 0, 1);

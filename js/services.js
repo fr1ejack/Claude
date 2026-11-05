@@ -1,4 +1,5 @@
-import { DEG } from './util.js';
+import { DEG, IS_ARTIFACT } from './util.js';
+import { offlineGeocode, offlineNearest } from './offline.js';
 
 /* Alle Datenquellen sind kostenlos und ohne API-Key nutzbar (CORS-fähig). */
 
@@ -15,6 +16,7 @@ async function j(url, opts = {}, ms = 12000) {
 /* ---------------- Orte (OpenStreetMap Nominatim) ---------------- */
 const NOMI = 'https://nominatim.openstreetmap.org';
 export async function geocode(q) {
+  if (IS_ARTIFACT) return offlineGeocode(q);
   const d = await j(`${NOMI}/search?format=jsonv2&limit=1&addressdetails=1&accept-language=de&q=${encodeURIComponent(q)}`);
   if (!d.length) return null;
   const r = d[0], bb = r.boundingbox.map(Number);
@@ -25,6 +27,7 @@ export async function geocode(q) {
   };
 }
 export async function reverse(lat, lon) {
+  if (IS_ARTIFACT) return offlineNearest(lat, lon);
   const r = await j(`${NOMI}/reverse?format=jsonv2&zoom=12&addressdetails=1&accept-language=de&lat=${lat}&lon=${lon}`);
   const a = r.address || {};
   return {
@@ -42,6 +45,7 @@ export function spanKm(bbox) {
 
 /* ---------------- Eigener Standort ---------------- */
 export async function locate() {
+  if (IS_ARTIFACT) throw new Error('In der privaten claude.ai-Version ist GPS gesperrt');
   try {
     const pos = await new Promise((res, rej) => {
       if (!navigator.geolocation) return rej(new Error('keine Geolocation'));

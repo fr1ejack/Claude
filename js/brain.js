@@ -81,3 +81,39 @@ export class Brain {
   }
   reset() { this.history = []; }
 }
+
+/*
+ * Gehirn für die private claude.ai-Version: nutzt Claude über das claude.ai-Konto des Betrachters
+ * (Artifact-Fähigkeit "sample"). Kein Download, kein API-Key. Beim ersten Mal fragt claude.ai um Erlaubnis.
+ */
+export class ClaudeBrain extends Brain {
+  static supported() { return true; }
+  async load() {
+    if (this.state === 'loading' || this.ready) return;
+    this.state = 'loading'; this.progress = 0.5; this.emit('Verbinde mit Claude …');
+    const sample = await window.claude?.use?.('sample').catch(() => null);
+    if (!sample) { this.state = 'error'; this.emit('Claude ist in dieser Ansicht nicht verfügbar'); throw new Error('sample nicht verfügbar'); }
+    this.sample = sample; this.model = 'Claude';
+    this.state = 'ready'; this.progress = 1; this.emit('Bereit');
+  }
+  async answer(question, { context = '', location = '', onToken } = {}) {
+    if (!this.ready) throw new Error('Gehirn nicht geladen');
+    const sys = this.systemPrompt({ location }).replace('Du bekommst Ergebnisse deiner eigenen Internet-Recherche und deines Gedächtnisses. Stütze dich darauf.', 'Du bekommst Einträge aus deinem Gedächtnis. Stütze dich darauf.')
+      + '\n\nDiese Version läuft offline: Für Live-Daten (Flüge, Wetter, Nachrichten von heute) sag kurz, dass die Vollversion von Jarvis das kann.';
+    const turns = this.history.slice(-8).map(m => ({ role: m.role, content: m.content }));
+    const last = `${sys}\n\n---\n${context ? `[Gedächtnis – nur als Hintergrund]\n${context}\n\n` : ''}Nutzer: ${question}`;
+    const input = [...turns, { role: 'user', content: last }];
+    if (input[0].role !== 'user') input.shift();
+    try {
+      const { text } = await this.sample(input, { modelTier: 'quick', cache: false, onText: ({ text }) => onToken?.(text) });
+      const out = String(text || '').replace(/\*\*?|__|#+\s/g, '').trim();
+      this.history.push({ role: 'user', content: question }, { role: 'assistant', content: out });
+      if (this.history.length > 16) this.history.splice(0, this.history.length - 16);
+      return out;
+    } catch (e) {
+      if (e?.code === 'not_granted') return 'Sie haben mir den Zugriff auf Claude nicht erlaubt. Laden Sie die Seite neu und erlauben Sie es, dann kann ich frei antworten.';
+      if (e?.code === 'rate_limited') return 'Einen Moment bitte, ich bekomme gerade zu viele Anfragen.';
+      throw e;
+    }
+  }
+}

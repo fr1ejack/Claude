@@ -4,13 +4,14 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { CSS2DRenderer } from 'three/addons/renderers/CSS2DRenderer.js';
-import { U, DEG, ll2v, v2ll, northAt, clamp, lerp, smooth, easeInOut, easeOut, linear, tween, updateTweens, wait, haversine, fmtCoord, fmt } from './util.js';
+import { IS_ARTIFACT, U, DEG, ll2v, v2ll, northAt, clamp, lerp, smooth, easeInOut, easeOut, linear, tween, updateTweens, wait, haversine, fmtCoord, fmt } from './util.js';
 import { Globe } from './globe.js';
 import { FlightLayer } from './flights.js';
+import { Buildings } from './buildings.js';
 import { Core, Projector } from './core.js';
 import { buildImageHologram } from './objects.js';
 import { Assistant } from './assistant.js';
-import { Brain, MODELS } from './brain.js';
+import { Brain, ClaudeBrain, MODELS } from './brain.js';
 import { memory } from './memory.js';
 import * as S from './services.js';
 import * as ui from './ui.js';
@@ -52,6 +53,8 @@ const globe = new Globe();
 globe.group.visible = false;
 scene.add(globe.group);
 const flights = new FlightLayer(globe.group);
+const buildings = new Buildings(globe.group);
+buildings.onStatus = t => ui.setStat('stLink', t);
 const core = new Core();
 scene.add(core.group);
 const projector = new Projector();
@@ -171,7 +174,7 @@ app.flyTo = (lat, lon, alt, ms) => {
   }, easeInOut);
   return app.camTween;
 };
-const altForKm = km => clamp(km / 6371 * 1.7, 0.004, 3);
+const altForKm = km => clamp(km / 6371 * 1.7, 0.00028, 3);
 
 app.goPlace = async (place, { quiet = false } = {}) => {
   await app.showGlobe();
@@ -182,7 +185,17 @@ app.goPlace = async (place, { quiet = false } = {}) => {
   await app.flyTo(place.lat, place.lon, altForKm(place.km || 50));
 };
 
+app.setUserLocation = (place) => {
+  const loc = { lat: place.lat, lon: place.lon, acc: 5000, src: 'Ihre Angabe', city: place.name, region: S.regionOf(place.addr) };
+  app.userLoc = loc;
+  try { localStorage.setItem('jarvis.home', JSON.stringify(loc)); } catch { /* */ }
+  ui.setLocation(loc.city + (loc.region ? ', ' + loc.region : ''), fmtCoord(loc.lat, loc.lon));
+};
 app.myLocation = async (fresh = false) => {
+  if (IS_ARTIFACT) {
+    if (app.userLoc) return app.userLoc;
+    throw new Error('Sagen Sie mir Ihren Ort, z. B. „Ich bin in Dortmund“.');
+  }
   if (app.userLoc && !fresh) return app.userLoc;
   ui.setStat('stLink', 'ORTUNG …');
   const loc = await S.locate();
@@ -249,12 +262,37 @@ async function autoRefreshFlights(now) {
 
 /* ================= Eingabe (Maus / Touch) ================= */
 let drag = null;
-stage.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, moved: false }; stage.setPointerCapture(e.pointerId); });
+const touches = new Map();
+let pinch = null;
+function zoomBy(f) {
+  app.lastInteract = performance.now();
+  if (app.mode === 'globe') { app.camTween?.cancel(); app.gcam.alt = clamp(app.gcam.alt * f, 0.00012, 7); }
+  else app.ocam.tgtDist = clamp(app.ocam.tgtDist * f, 3, 16);
+}
+stage.addEventListener('pointerdown', e => {
+  touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  stage.setPointerCapture(e.pointerId);
+  if (touches.size === 2) {
+    const [a, b] = [...touches.values()];
+    pinch = { d: Math.hypot(a.x - b.x, a.y - b.y) };
+    if (drag) drag.moved = true;
+    return;
+  }
+  drag = { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, moved: false };
+});
 stage.addEventListener('pointermove', e => {
+  if (touches.has(e.pointerId)) touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (pinch && touches.size >= 2) {
+    const [a, b] = [...touches.values()];
+    const d = Math.hypot(a.x - b.x, a.y - b.y);
+    if (d > 0 && pinch.d > 0) zoomBy(pinch.d / d);
+    pinch.d = d;
+    return;
+  }
   if (!drag) return;
   const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
   drag.x = e.clientX; drag.y = e.clientY;
-  if (Math.abs(e.clientX - drag.sx) + Math.abs(e.clientY - drag.sy) > 5) drag.moved = true;
+  if (Math.abs(e.clientX - drag.sx) + Math.abs(e.clientY - drag.sy) > 6) drag.moved = true;
   if (!drag.moved) return;
   app.lastInteract = performance.now();
   if (app.mode === 'globe') {
@@ -267,20 +305,20 @@ stage.addEventListener('pointermove', e => {
     app.ocam.el = clamp(app.ocam.el + dy * 0.004, -0.2, 1.3);
   }
 });
-stage.addEventListener('pointerup', e => {
-  if (drag && !drag.moved && app.mode === 'globe' && app.flightsOn) {
+const endPointer = e => {
+  touches.delete(e.pointerId);
+  if (touches.size < 2) pinch = null;
+  if (e.type === 'pointerup' && drag && !drag.moved && app.mode === 'globe' && app.flightsOn) {
     const p = flights.pick(e.clientX, e.clientY, camera, innerWidth, innerHeight);
     if (p) assistant.flightDetail(p, true, false);
   }
-  drag = null;
-});
+  if (touches.size === 0) drag = null;
+};
+stage.addEventListener('pointerup', endPointer);
+stage.addEventListener('pointercancel', endPointer);
 stage.addEventListener('wheel', e => {
   e.preventDefault();
-  app.lastInteract = performance.now();
-  if (app.mode === 'globe') {
-    app.camTween?.cancel();
-    app.gcam.alt = clamp(app.gcam.alt * Math.exp(e.deltaY * 0.0012), 0.003, 7);
-  } else app.ocam.tgtDist = clamp(app.ocam.tgtDist * Math.exp(e.deltaY * 0.001), 3, 16);
+  zoomBy(Math.exp(e.deltaY * (app.mode === 'globe' ? 0.0012 : 0.001)));
 }, { passive: false });
 const fitFov = () => { camera.fov = camera.aspect < 1 ? Math.min(78, 45 / Math.pow(camera.aspect, 0.65)) : 45; };
 fitFov();
@@ -313,8 +351,8 @@ function updateCamera(dt) {
     _up.copy(_N).multiplyScalar(Math.cos(tau)).addScaledVector(_n, Math.sin(tau));
     camera.up.copy(_up);
     camera.lookAt(_T);
-    camera.near = clamp(alt * 0.25, 0.0004, 0.5);
-    camera.far = 400;
+    camera.near = clamp(alt * 0.2, 0.000004, 0.5);
+    camera.far = alt < 0.5 ? 8 : 400;
   } else {
     app.ocam.dist = lerp(app.ocam.dist, app.ocam.tgtDist, Math.min(1, dt * 2.5));
     const d = app.ocam.dist, el = app.ocam.el;
@@ -360,6 +398,10 @@ function frame(now) {
     globe.update(dt, { camera, alt: app.gcam.alt, fade: globe.fade.value, heightPx: innerHeight * renderer.getPixelRatio() });
     if (app.mode === 'globe' && (!app.camTween || app.camTween.done)) globe.requestPatch(app.gcam.lat, app.gcam.lon, app.gcam.alt, camera.aspect);
     flights.update(app.gcam.alt, globe.fade.value);
+    if (!IS_ARTIFACT) {
+      buildings.want(app.gcam.lat, app.gcam.lon, app.gcam.alt, !!(app.camTween && !app.camTween.done) || !!drag?.moved);
+      buildings.update(app.gcam.alt, globe.fade.value);
+    }
   } else flights.update(app.gcam.alt, 0);
   autoRefreshFlights(now);
   scene.userData.stars.rotation.y += dt * 0.004;
@@ -372,12 +414,17 @@ function frame(now) {
 }
 
 /* ================= Assistent & UI ================= */
-const brain = new Brain();
+const brain = IS_ARTIFACT ? new ClaudeBrain() : new Brain();
 const assistant = new Assistant(app, brain);
 app.brain = brain;
 const form = document.getElementById('cmdForm');
 const input = document.getElementById('cmd');
 form.addEventListener('submit', e => { e.preventDefault(); const v = input.value; input.value = ''; assistant.handle(v); });
+if (IS_ARTIFACT) {
+  for (const id of ['micBtn', 'tglWake', 'tglConvo', 'tglFlights', 'btnShare', 'btnInstall']) document.getElementById(id).hidden = true;
+  input.placeholder = 'Schreib Jarvis … z. B. „Wo ist Dortmund?“';
+  document.getElementById('attrib').textContent = 'Private Version · Geodaten Natural Earth & GeoNames · Antworten von Claude';
+}
 const mic = document.getElementById('micBtn');
 if (!assistant.SR) mic.classList.add('na');
 mic.addEventListener('click', () => assistant.listenOnce());
@@ -420,6 +467,22 @@ brain.onChange((state, progress, text) => {
 setInterval(brainStatus, 3000);
 function openBrainPanel() {
   brainPanelOpen = true;
+  if (IS_ARTIFACT) {
+    ui.showPanel('KI-KERN · GEHIRN', `
+      <p>In dieser privaten Version denkt Jarvis mit <b>Claude</b> – über das claude.ai-Konto der Person, die die Seite öffnet. Kein Download, kein API-Key. Beim ersten Gespräch fragt claude.ai einmal um Erlaubnis.</p>
+      <p class="hint">Status: ${brain.ready ? 'verbunden' : brain.state === 'loading' ? 'verbinde …' : 'nicht verbunden'}</p>
+      <div class="sect"><h3>IHRE REGELN FÜR JARVIS</h3>
+        <textarea class="rules" id="rulesBox" placeholder="z. B. Nenn mich Boss. Antworte immer ausführlich.">${memory.rules().replace(/</g, '&lt;')}</textarea>
+        <button type="button" class="btn" data-id="rules">REGELN SPEICHERN</button>
+        <p class="hint">Auch per Text: „Ab jetzt …“, „Hör auf …“, „Merke dir, dass …“</p></div>
+      <div class="sect"><h3>GEDÄCHTNIS</h3><p>${memory.facts().length} Fakten über Sie</p>
+        ${memory.facts().slice(-5).map(f => `<p class="hint">• ${f.text.replace(/</g, '&lt;')}</p>`).join('')}
+        <button type="button" class="btn ghost" data-id="forget">GEDÄCHTNIS LÖSCHEN</button></div>`, id => {
+      if (id === 'rules') { memory.setRules(document.getElementById('rulesBox').value); assistant.say('Ihre Regeln sind gespeichert.'); }
+      else if (id === 'forget') { memory.clear(); brain.reset(); brainStatus(); openBrainPanel(); }
+    });
+    return;
+  }
   const cur = brain.model || memory.model() || MODELS[1].id;
   const ok = Brain.supported();
   ui.showPanel('KI-KERN · GEHIRN', `
@@ -475,7 +538,7 @@ document.getElementById('btnInstall').addEventListener('click', async () => {
   installEvt = null; document.getElementById('btnInstall').hidden = true;
 });
 
-ui.chips(['Wo bin ich?', 'Wo ist Dortmund?', 'Flüge über Frankfurt', 'Suche Flug LH400', 'Zeig mir einen PS5-Controller', 'Öffne ihn', 'Wie hoch ist der Eiffelturm?', 'Merke dir, dass ich Fußball mag'], t => assistant.handle(t));
+ui.chips(IS_ARTIFACT ? ['Ich bin in Dortmund', 'Wo ist Tokio?', 'Zeig mir einen PS5-Controller', 'Öffne ihn', 'Zeig mir eine Drohne', 'Erzähl mir einen Witz', 'Wie funktioniert ein Schwarzes Loch?', 'Merke dir, dass ich Fußball mag'] : ['Wo bin ich?', 'Wo ist Dortmund?', 'Zeig mir den Signal Iduna Park', 'Flüge über Frankfurt', 'Suche Flug LH400', 'Zeig mir einen PS5-Controller', 'Öffne ihn', 'Wie hoch ist der Eiffelturm?'], t => assistant.handle(t));
 ui.startClock();
 
 /* ================= Boot ================= */
@@ -487,6 +550,7 @@ requestAnimationFrame(frame);
   bl('Initialisiere Holo-Renderer … OK');
   bl('Lade neuronale Sprachmodule … ' + (assistant.SR ? 'OK' : 'nur Text (Browser ohne Spracherkennung)'));
   await globe.init(bl);
+  try { const { loadCities } = await import('./offline.js'); globe.addCities(await loadCities()); bl('Städte-Datenbank geladen'); } catch { /* optional */ }
   bl('Verbinde Flugdaten-Netzwerk (adsb.lol / OpenSky) … BEREIT');
   bootBtn.disabled = false;
   bootBtn.textContent = 'SYSTEM STARTEN';
@@ -497,9 +561,17 @@ bootBtn.addEventListener('click', async () => {
   const h = new Date().getHours();
   const g = h < 5 ? 'Guten Abend' : h < 11 ? 'Guten Morgen' : h < 18 ? 'Guten Tag' : 'Guten Abend';
   assistant.say(`${g}. Alle Systeme sind online. Wie kann ich helfen?`);
+  if (IS_ARTIFACT) {
+    let home = null; try { home = JSON.parse(localStorage.getItem('jarvis.home') || 'null'); } catch { /* */ }
+    if (home) { app.userLoc = home; ui.setLocation(home.city + (home.region ? ', ' + home.region : ''), fmtCoord(home.lat, home.lon)); }
+    else ui.setLocation('Sagen Sie: „Ich bin in …“', '');
+    ui.setStat('stLink', 'OFFLINE-MODUS');
+    brain.load().catch(() => {});
+    return;
+  }
   try { await app.myLocation(); } catch { ui.setLocation('Standort unbekannt', ''); ui.setStat('stLink', 'BEREIT'); }
   // KI-Kern automatisch starten, wenn er schon einmal geladen wurde (kommt dann aus dem Cache)
   const saved = memory.model();
   if (saved && Brain.supported()) brain.load(saved).catch(() => {});
-  else if (Brain.supported()) ui.log('ai', 'Tipp: Aktivieren Sie meinen KI-Kern (🧠 unten), dann kann ich frei mit Ihnen reden und jede Frage beantworten – ganz ohne API-Key.');
+  else if (Brain.supported() && !IS_ARTIFACT) ui.log('ai', 'Tipp: Aktivieren Sie meinen KI-Kern (🧠 unten), dann kann ich frei mit Ihnen reden und jede Frage beantworten – ganz ohne API-Key.');
 });

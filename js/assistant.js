@@ -1,7 +1,7 @@
 import * as S from './services.js';
 import * as ui from './ui.js';
 import { findObject } from './objects.js';
-import { fmt, fmtCoord, haversine, compass, esc } from './util.js';
+import { fmt, fmtCoord, haversine, compass, esc, IS_ARTIFACT } from './util.js';
 import { memory, keywords } from './memory.js';
 
 const STRIP_START = /^(hey |ok |okay |hallo )?(jarvis)[,!. ]*/;
@@ -167,7 +167,19 @@ export class Assistant {
       return this.say('Zurück im Bereitschaftsmodus.');
     }
 
+    // Standort selbst angeben
+    const here = orig.match(/^(?:ich bin (?:gerade |jetzt )?in|ich wohne in|ich lebe in|mein standort ist|wir sind in)\s+(.+?)[.!]?$/i);
+    if (here) {
+      const place = await S.geocode(cleanSubject(here[1]));
+      if (!place) return this.say(`Ich konnte „${here[1]}“ nicht finden.`);
+      app.setUserLocation(place);
+      await app.goPlace({ name: place.name, lat: place.lat, lon: place.lon, km: 30, kind: 'me', sub: S.regionOf(place.addr) });
+      return this.say(`Verstanden, Ihr Standort ist ${place.name}. Das merke ich mir.`);
+    }
+
     // Eigener Standort
+    if (IS_ARTIFACT && /(wo bin ich|mein(en)? standort|wo befinde ich mich|meine position|wo sind wir)/.test(tf) && !app.userLoc)
+      return this.say('In dieser privaten Version darf ich kein GPS benutzen. Sagen Sie mir einfach, wo Sie sind – zum Beispiel: Ich bin in Dortmund.');
     if (/(wo bin ich|mein(en)? standort|wo befinde ich mich|meine position|wo sind wir)/.test(tf)) {
       const me = await app.myLocation(true);
       await app.goPlace({ name: me.city || 'Ihr Standort', lat: me.lat, lon: me.lon, km: me.acc > 3000 ? 40 : 6, kind: 'me', sub: me.region });
@@ -177,6 +189,8 @@ export class Assistant {
     // Flüge
     const flightWord = /(flug|flüge|fluege|flugzeug|flieger|maschinen|luftverkehr|flugverkehr|airliner|jets?\b|überfl|ueberfl)/.test(tf);
     const cs = extractCallsign(text);
+    if ((flightWord || (cs && tf.split(' ').length <= 3)) && IS_ARTIFACT)
+      return this.say('Live-Flugdaten kann ich in dieser privaten Version nicht abrufen, hier ist der Internetzugang gesperrt. In der Vollversion von Jarvis zeige ich Ihnen jeden Flug in Echtzeit.');
     if (flightWord || (cs && tf.split(' ').length <= 3)) {
       if (/(aus|ausblenden|verstecken|deaktivier|stopp)/.test(tf) && !/über|ueber|nach/.test(tf)) { app.setFlights(false); return this.say('Flugverkehr ausgeblendet.'); }
       if (cs) return this.findFlight(cs);
@@ -198,6 +212,8 @@ export class Assistant {
     }
 
     // Wetter
+    if (/(wetter|temperatur|regnet|wie warm|wie kalt|grad draussen)/.test(tf) && IS_ARTIFACT)
+      return this.say('Das Live-Wetter kann ich in dieser privaten Version nicht abrufen. In der Vollversion geht das.');
     if (/(wetter|temperatur|regnet|wie warm|wie kalt|grad draussen)/.test(tf)) {
       const m = tf.match(/(?:in|für|fuer|bei|von)\s+(.+)$/);
       let place;
@@ -268,14 +284,16 @@ export class Assistant {
   async think(text, { holo = false } = {}) {
     const b = this.brain;
     const q = keywords(text).join(' ') || text;
+    if (!b.ready && IS_ARTIFACT && b.state !== 'loading') { try { await b.load(); } catch { /* unten */ } }
     if (!b.ready) {
       if (b.state === 'loading') return this.say(`Mein KI-Kern lädt noch – ${Math.round(b.progress * 100)} Prozent. Einen Moment bitte.`);
       const k = await S.wiki(q).catch(() => null);
       if (k) return this.wikiKnowledge(q, holo, k);
+      if (IS_ARTIFACT) return this.say('Ich kann mich gerade nicht mit Claude verbinden. Laden Sie die Seite neu und erlauben Sie den Zugriff, wenn claude.ai danach fragt.');
       return this.say('Für freie Gespräche brauche ich meinen KI-Kern. Aktivieren Sie ihn über den Knopf „KI-KERN“ – er läuft direkt in Ihrem Browser, ganz ohne API-Key.');
     }
     ui.setState('RECHERCHIERT …', 'think');
-    const research = await S.webResearch(q).catch(() => []);
+    const research = IS_ARTIFACT ? [] : await S.webResearch(q).catch(() => []);
     memory.learn(research);
     const mem = memory.relevant(text).filter(e => !research.some(r => r.title === e.title));
     const ctx = [...research.map(r => `• ${r.title} (${r.src}): ${r.text}`), ...mem.map(e => `• Erinnerung – ${e.title}: ${e.text}`)].join('\n').slice(0, 3500);
@@ -284,7 +302,7 @@ export class Assistant {
       ui.showPanel('RECHERCHE', `${research[0].image ? `<img class="holo-img" src="${esc(research[0].image)}" alt="">` : ''}<p class="hint">Jarvis hat ${research.length} Quelle(n) gelesen und sich gemerkt:</p><ul class="flist">${research.map(r => `<li><span class="cs">${esc(r.title)}</span><span class="alt">${esc(r.src)}</span><span class="meta">${esc(r.text.slice(0, 160))}…</span></li>`).join('')}</ul><p class="hint">Gedächtnis: ${memory.experiences().length} Erfahrungen · ${memory.facts().length} Fakten über Sie</p>`);
     }
     ui.setState('DENKT …', 'think');
-    const el = ui.log('ai', '…');
+    const el = ui.log('ai', IS_ARTIFACT ? 'Denke nach …' : '…');
     const loc = this.app.userLoc ? [this.app.userLoc.city, this.app.userLoc.region].filter(Boolean).join(', ') : '';
     const ans = await b.answer(text, { context: ctx, location: loc, onToken: tk => ui.setLogText(el, tk) });
     ui.setLogText(el, ans);
