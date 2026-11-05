@@ -32,9 +32,9 @@ PHI_START = 0.0
 SCHWENK = math.pi
 
 # Massen
-MASSE = 0.053         # kg, Gesamtmasse laut Stueckliste
-M_HINTERRAD = 0.0073  # kg je Hinterrad (Depron-Scheibe + Lauffl.)
-M_VORDERRAD = 0.0035  # kg
+MASSE = 0.051         # kg, Gesamtmasse laut Stueckliste (BAUPLAN.md)
+M_HINTERRAD = 0.0058  # kg je Hinterrad (Depron-Scheibe + Naben + Laufflaeche)
+M_VORDERRAD = 0.0030  # kg
 R_VORDERRAD = 0.050
 
 # Verluste
@@ -168,7 +168,7 @@ if __name__ == "__main__":
         print(f"  Rollwiderstand {c:.3f}  ->  {simulation(0.002)['strecke']:6.1f} m")
     CRR = basis
     basis_m = MASSE
-    for m in (0.053, 0.080, 0.120):
+    for m in (0.051, 0.080, 0.120):
         MASSE = m
         print(f"  Masse {m * 1000:5.0f} g          ->  {simulation(0.002)['strecke']:6.1f} m")
     MASSE = basis_m
