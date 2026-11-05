@@ -1,0 +1,424 @@
+<title>Eiswürfel-Salzbatterie</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: eine ruhige Lesespalte wie ein Laborheft, Schritte als nummerierte Ablaufkarten,
+   Kupfer (Pluspol) und Zink (Minuspol) ziehen sich als Farbcode durch alle Grafiken. */
+:root {
+  --bg: #f3f7f7; --surface: #ffffff; --ink: #14232a; --muted: #52656c; --line: #d3e0e2;
+  --kupfer: #c4612a; --zink: #6c7f8f; --wasser: #2b8c97; --wasser-hell: #d6eef0;
+  --warn: #b3261e; --warn-bg: #fdecea; --ok: #2c7a3f; --ok-bg: #e6f4e9;
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-text: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e181b; --surface: #15232731; --ink: #e4eef0; --muted: #9db1b6; --line: #27393e;
+  --kupfer: #ec8a52; --zink: #9db0bf; --wasser: #4fb8c3; --wasser-hell: #173a3f;
+  --warn: #ff8a80; --warn-bg: #3a1d1b; --ok: #7fd18f; --ok-bg: #16301d; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0e181b; --surface: #15232731; --ink: #e4eef0; --muted: #9db1b6; --line: #27393e;
+  --kupfer: #ec8a52; --zink: #9db0bf; --wasser: #4fb8c3; --wasser-hell: #173a3f;
+  --warn: #ff8a80; --warn-bg: #3a1d1b; --ok: #7fd18f; --ok-bg: #16301d; color-scheme: dark }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 17px/1.6 var(--f-text); }
+.wrap { max-width: 780px; margin: 0 auto; padding-block: 40px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 48px; }
+h1, h2, h3 { font-family: var(--f-display); line-height: 1.15; text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(2.1rem, 6vw, 3.2rem); font-weight: 800; letter-spacing: -0.01em; }
+h2 { font-size: 1.6rem; font-weight: 800; }
+h3 { font-size: 1.15rem; font-weight: 600; }
+p { margin: 0; max-width: 65ch; }
+section { display: grid; gap: 16px; min-width: 0; }
+.mono { font-family: var(--f-mono); font-size: 0.92em; }
+.cu { color: var(--kupfer); font-weight: 700; } .zn { color: var(--zink); font-weight: 700; }
+.eyebrow { font: 600 0.78rem/1 var(--f-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--wasser); }
+
+header { display: grid; gap: 18px; }
+.lead { font-size: 1.15rem; color: var(--muted); }
+.steckbrief { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 1px;
+  background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.steckbrief div { background: var(--bg); padding: 12px 14px; display: grid; gap: 2px; }
+.steckbrief dt { font: 500 0.75rem/1.2 var(--f-mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.steckbrief dd { margin: 0; font-weight: 700; }
+
+.hinweis { border-radius: 10px; padding: 16px 18px; display: grid; gap: 8px; }
+.hinweis.warn { background: var(--warn-bg); }
+.hinweis.warn h3 { color: var(--warn); }
+.hinweis ul { margin: 0; padding-left: 1.2em; display: grid; gap: 4px; }
+
+table { border-collapse: collapse; width: 100%; font-size: 0.97rem; }
+th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 600 0.78rem/1.3 var(--f-mono); text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.scroll { overflow-x: auto; }
+
+figure { margin: 0; display: grid; gap: 8px; }
+figure svg { width: 100%; height: auto; display: block; }
+figcaption { font-size: 0.9rem; color: var(--muted); }
+.diagramm { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; overflow-x: auto; }
+svg text { font-family: var(--f-text); font-size: 13px; fill: var(--ink); }
+svg .klein { font-size: 11px; fill: var(--muted); }
+svg .s-kupfer { stroke: var(--kupfer); } svg .f-kupfer { fill: var(--kupfer); }
+svg .s-zink { stroke: var(--zink); } svg .f-zink { fill: var(--zink); }
+svg .f-wasser { fill: var(--wasser-hell); } svg .s-wasser { stroke: var(--wasser); }
+svg .s-ink { stroke: var(--ink); } svg .f-ink { fill: var(--ink); }
+svg .f-bg { fill: var(--bg); } svg .s-muted { stroke: var(--muted); }
+svg .t-kupfer { fill: var(--kupfer); font-weight: 700; } svg .t-zink { fill: var(--zink); font-weight: 700; }
+svg .t-wasser { fill: var(--wasser); font-weight: 700; }
+
+ol.schritte { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; counter-reset: s; }
+ol.schritte > li { counter-increment: s; display: grid; grid-template-columns: 44px 1fr; gap: 14px; align-items: start; }
+ol.schritte > li::before { content: counter(s); font: 800 1.4rem/44px var(--f-display); text-align: center;
+  width: 44px; height: 44px; border-radius: 50%; background: var(--wasser-hell); color: var(--wasser); }
+ol.schritte > li > div { display: grid; gap: 6px; min-width: 0; padding-top: 8px; }
+.tipp { font-size: 0.93rem; color: var(--muted); }
+
+.material { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px 24px; margin: 0; padding: 0; list-style: none; }
+.material li { display: grid; grid-template-columns: 3.2em 1fr; gap: 8px; padding: 8px 0; border-bottom: 1px dashed var(--line); }
+.material .menge { font-family: var(--f-mono); color: var(--wasser); font-weight: 500; }
+
+/* Rechner */
+.rechner { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px; display: grid; gap: 18px; }
+.rechner .eingaben { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+.rechner label { font-weight: 700; display: grid; gap: 6px; }
+.rechner select, .rechner input[type=range] { font: inherit; width: 100%; accent-color: var(--wasser); }
+.rechner select { padding: 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+.werte { display: flex; flex-wrap: wrap; gap: 28px; align-items: baseline; }
+.wert { display: grid; gap: 0; }
+.wert b { font: 800 2.2rem/1.1 var(--f-display); font-variant-numeric: tabular-nums; color: var(--wasser); }
+.wert span { font-size: 0.85rem; color: var(--muted); }
+.geraete { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.geraete li { display: grid; grid-template-columns: 7.5em 1fr; gap: 12px; align-items: baseline; }
+.pill { font: 600 0.78rem/1 var(--f-mono); padding: 5px 8px; border-radius: 99px; text-align: center; letter-spacing: 0.03em; }
+.pill.ja { background: var(--ok-bg); color: var(--ok); }
+.pill.knapp { background: var(--wasser-hell); color: var(--wasser); }
+.pill.nein { background: var(--warn-bg); color: var(--warn); }
+.zellen-anzeige { display: flex; gap: 4px; flex-wrap: wrap; }
+.zellen-anzeige i { width: 22px; height: 22px; border-radius: 5px; background: var(--wasser-hell); border: 2px solid var(--wasser); }
+
+details { border-bottom: 1px solid var(--line); padding: 10px 0; }
+summary { cursor: pointer; font-weight: 700; }
+summary:focus-visible, select:focus-visible, input:focus-visible { outline: 3px solid var(--wasser); outline-offset: 2px; }
+details p { margin-top: 6px; }
+.protokoll td { height: 2.2em; }
+footer { color: var(--muted); font-size: 0.9rem; border-top: 1px solid var(--line); padding-top: 16px; }
+@media (max-width: 480px) {
+  body { font-size: 16px; }
+  .steckbrief div:last-child { grid-column: 1 / -1; }
+  ol.schritte > li { grid-template-columns: 36px 1fr; gap: 10px; }
+  ol.schritte > li::before { width: 36px; height: 36px; line-height: 36px; font-size: 1.15rem; }
+  .geraete li { grid-template-columns: 1fr; gap: 4px; }
+  .geraete .pill { justify-self: start; }
+}
+</style>
+
+<div class="wrap">
+<header>
+  <span class="eyebrow">Bauprojekt · Chemie &amp; Elektrizität</span>
+  <h1>Die Eiswürfel-Salzbatterie</h1>
+  <p class="lead">Aus einem Eiswürfelbehälter, Salzwasser, verzinkten Schrauben und Kupferdraht baust du eine echte Batterie. Sie bringt eine LED zum Leuchten und kann eine kleine Digitaluhr antreiben.</p>
+  <dl class="steckbrief">
+    <div><dt>Alter</dt><dd>ab ca. 12 Jahren</dd></div>
+    <div><dt>Zeit</dt><dd>30–45 Minuten</dd></div>
+    <div><dt>Kosten</dt><dd>ca. 5–10 €</dd></div>
+    <div><dt>Schwierigkeit</dt><dd>leicht</dd></div>
+    <div><dt>Ergebnis</dt><dd>4–6 Volt mit 8 Zellen</dd></div>
+  </dl>
+</header>
+
+<section aria-labelledby="h-sicher">
+  <div class="hinweis warn">
+    <h3 id="h-sicher">Bevor du anfängst: Sicherheit</h3>
+    <ul>
+      <li>Diese Batterie ist schwach und ungefährlich. Du kannst sie ohne Sorge anfassen.</li>
+      <li><strong>Schließe sie nie an die Steckdose, ein Netzteil, ein Ladegerät oder eine andere Batterie an.</strong> Wenn man Strom <em>in</em> Salzwasser schickt, kann giftiges Chlorgas entstehen.</li>
+      <li>Salzwasser mit gelöstem Zink nicht trinken. Den Eiswürfelbehälter danach nicht mehr für Essen benutzen.</li>
+      <li>Kabel abisolieren mit Messer oder Abisolierzange: Lass dir von einem Erwachsenen helfen.</li>
+      <li>Nach dem Basteln Hände waschen.</li>
+    </ul>
+  </div>
+</section>
+
+<section aria-labelledby="h-material">
+  <h2 id="h-material">Das brauchst du</h2>
+  <ul class="material">
+    <li><span class="menge">1×</span><span>Eiswürfelbehälter aus Kunststoff mit mindestens 8 Fächern (ein alter, nur für Experimente)</span></li>
+    <li><span class="menge">9×</span><span><strong class="zn">verzinkte</strong> Schrauben oder Nägel, ca. 4 × 40 mm (silbrig glänzend, aus dem Baumarkt; <em>kein</em> Edelstahl)</span></li>
+    <li><span class="menge">1 m</span><span><strong class="cu">Kupferdraht</strong>, ca. 1–1,5 mm dick (z. B. aus einem Stück Elektrokabel, abisoliert, oder blanker Draht aus dem Bastelladen)</span></li>
+    <li><span class="menge">2 EL</span><span>Kochsalz (ca. 30 g)</span></li>
+    <li><span class="menge">0,5 l</span><span>warmes Leitungswasser</span></li>
+    <li><span class="menge">1×</span><span>rote LED (Leuchtdiode). Rot braucht am wenigsten Spannung.</span></li>
+    <li><span class="menge">2×</span><span>Krokodilklemmen-Kabel (macht das Anschließen viel einfacher)</span></li>
+    <li><span class="menge">opt.</span><span>Multimeter (ab ca. 10 €) zum Messen, feines Schleifpapier, eine kleine LCD-Uhr oder ein Taschenrechner mit Knopfzelle</span></li>
+  </ul>
+</section>
+
+<section aria-labelledby="h-wie">
+  <h2 id="h-wie">So funktioniert es</h2>
+  <p>Jedes Fach im Eiswürfelbehälter wird zu einer kleinen Batterie, einer <strong>Zelle</strong>. In jeder Zelle stecken zwei verschiedene Metalle im Salzwasser:</p>
+  <p><span class="zn">Zink</span> (die Beschichtung der Schraube) gibt gerne Elektronen ab und löst sich dabei langsam auf. Es wird zum <span class="zn">Minuspol</span>. <span class="cu">Kupfer</span> gibt kaum Elektronen ab. An ihm nehmen Wasser und Luftsauerstoff die Elektronen wieder auf. Es wird zum <span class="cu">Pluspol</span>. Verbindest du die beiden Metalle außen mit einem Draht und einer LED, fließen die Elektronen vom Zink durch die LED zum Kupfer. Das ist elektrischer Strom.</p>
+  <p>Das <strong>Salz</strong> sorgt dafür, dass das Wasser Strom leitet. Es zerfällt im Wasser in elektrisch geladene Teilchen (Ionen), die den Stromkreis im Inneren der Zelle schließen. Reines Wasser leitet fast gar nicht.</p>
+  <figure>
+    <div class="diagramm">
+      <svg viewBox="0 0 640 330" role="img" aria-labelledby="svg1-t">
+        <title id="svg1-t">Querschnitt einer Zelle: Zinkschraube und Kupferdraht im Salzwasser, außen über eine LED verbunden</title>
+        <defs>
+          <marker id="pfeil" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" class="f-ink"/>
+          </marker>
+        </defs>
+        <!-- Becher -->
+        <path d="M200 130 L215 300 L425 300 L440 130" fill="none" class="s-ink" stroke-width="2.5"/>
+        <path d="M206 170 L215 298 L425 298 L434 170 Z" class="f-wasser"/>
+        <line x1="206" y1="170" x2="434" y2="170" class="s-wasser" stroke-width="2"/>
+        <text x="320" y="285" text-anchor="middle" class="t-wasser">Salzwasser</text>
+        <!-- Ionen -->
+        <g class="klein"><text x="290" y="215">Na⁺</text><text x="345" y="240">Cl⁻</text><text x="300" y="258">Cl⁻</text><text x="352" y="205">Na⁺</text></g>
+        <!-- Zinkschraube -->
+        <rect x="248" y="96" width="34" height="10" rx="2" class="f-zink"/>
+        <rect x="259" y="106" width="12" height="170" class="f-zink"/>
+        <path d="M259 120 l12 6 M259 134 l12 6 M259 148 l12 6 M259 162 l12 6 M259 176 l12 6 M259 190 l12 6 M259 204 l12 6 M259 218 l12 6 M259 232 l12 6 M259 246 l12 6 M259 260 l12 6" class="s-ink" stroke-opacity=".35" stroke-width="1.5"/>
+        <text x="236" y="60" text-anchor="end" class="t-zink">Zink (Schraube)</text>
+        <text x="236" y="78" text-anchor="end" class="t-zink">Minuspol −</text>
+        <!-- Kupferdraht -->
+        <path d="M375 96 L375 160 q 0 10 -8 16 q -12 10 0 20 q 12 10 0 20 q -12 10 0 20 q 12 10 0 20 q -10 8 0 18" fill="none" class="s-kupfer" stroke-width="5" stroke-linecap="round"/>
+        <text x="404" y="60" class="t-kupfer">Kupfer (Draht)</text>
+        <text x="404" y="78" class="t-kupfer">Pluspol +</text>
+        <!-- äußerer Stromkreis -->
+        <path d="M265 96 L265 30 L300 30" fill="none" class="s-ink" stroke-width="2"/>
+        <path d="M340 30 L375 30 L375 96" fill="none" class="s-ink" stroke-width="2"/>
+        <!-- LED -->
+        <polygon points="340,18 340,42 318,30" class="f-bg s-ink" stroke-width="2"/>
+        <line x1="318" y1="16" x2="318" y2="44" class="s-ink" stroke-width="2.5"/>
+        <path d="M300 30 L318 30" class="s-ink" stroke-width="2"/>
+        <path d="M322 10 l-6 -8 M332 10 l-6 -8" class="s-kupfer" stroke-width="2" marker-end="url(#pfeil)"/>
+        <text x="320" y="62" text-anchor="middle" class="klein">LED</text>
+        <!-- Elektronenfluss -->
+        <path d="M150 260 L150 120" class="s-zink" stroke-width="2" marker-end="url(#pfeil)" fill="none"/>
+        <text x="40" y="190" class="klein">Zink löst sich auf,</text>
+        <text x="40" y="206" class="klein">gibt Elektronen ab</text>
+        <path d="M480 120 L480 260" class="s-kupfer" stroke-width="2" marker-end="url(#pfeil)" fill="none"/>
+        <text x="492" y="180" class="klein">Elektronen werden am</text>
+        <text x="492" y="196" class="klein">Kupfer vom Wasser und</text>
+        <text x="492" y="212" class="klein">Sauerstoff aufgenommen</text>
+        <path d="M280 22 L300 22" class="s-muted" stroke-width="1.5" marker-end="url(#pfeil)"/>
+        <text x="200" y="20" class="klein">Elektronen e⁻ →</text>
+      </svg>
+    </div>
+    <figcaption>Eine Zelle liefert etwa 0,7–0,9 Volt. Für eine LED braucht man mehrere Zellen hintereinander.</figcaption>
+  </figure>
+  <p>Eine Zelle allein liefert weniger als 1 Volt. Eine rote LED braucht aber etwa 1,8 Volt. Deshalb schaltest du mehrere Zellen <strong>in Reihe</strong>, also hintereinander. Dann addieren sich die Spannungen, so wie bei mehreren Batterien in einer Taschenlampe.</p>
+</section>
+
+<section aria-labelledby="h-bau">
+  <h2 id="h-bau">Bauanleitung</h2>
+  <ol class="schritte">
+    <li><div>
+      <h3>Kupferdraht vorbereiten</h3>
+      <p>Schneide den Kupferdraht in <strong>9 Stücke</strong> von je ca. 10 cm. Wenn du Elektrokabel benutzt: Plastikhülle komplett entfernen, das Kupfer muss blank sein.</p>
+      <p class="tipp">Ist der Draht dunkel angelaufen, reibe ihn kurz mit Schleifpapier blank. Blankes Metall gibt mehr Strom.</p>
+    </div></li>
+    <li><div>
+      <h3>„Brücken“ bauen</h3>
+      <p>Wickle bei <strong>8 Schrauben</strong> je ein Kupferdrahtstück 4–5 Mal fest um den Schraubenkopf (oder direkt unter den Kopf). Das andere Ende des Drahts zeigt seitlich weg. So entsteht eine Brücke: Zink auf der einen Seite, Kupfer auf der anderen.</p>
+      <p>Das freie Kupferende biegst du zu einer kleinen Spirale oder Schlaufe. Mehr Kupferfläche im Wasser ergibt mehr Strom.</p>
+      <p class="tipp">Die Verbindung zwischen Draht und Schraube muss richtig fest sitzen. Ein Wackelkontakt ist der häufigste Fehler.</p>
+    </div></li>
+    <li><div>
+      <h3>Salzwasser anrühren</h3>
+      <p>2 gehäufte Esslöffel Salz in 0,5 l warmem Wasser verrühren, bis sich alles aufgelöst hat.</p>
+    </div></li>
+    <li><div>
+      <h3>Fächer füllen</h3>
+      <p>Fülle <strong>8 Fächer</strong> nur zu etwa drei Vierteln. Wische danach die Stege zwischen den Fächern <strong>trocken</strong>.</p>
+      <p class="tipp">Wichtig: Läuft Salzwasser über einen Steg, sind zwei Zellen kurzgeschlossen und die Spannung bricht ein.</p>
+    </div></li>
+    <li><div>
+      <h3>Brücken einsetzen</h3>
+      <p>Setze die Brücken wie im Bild unten ein: Jede Brücke steckt mit der <span class="zn">Schraube</span> in einem Fach und mit dem <span class="cu">Kupfer</span> im nächsten Fach. So geht es Fach für Fach weiter, eine Kette.</p>
+      <p>Ins <strong>erste Fach</strong> kommt zusätzlich ein einzelner Kupferdraht, das ist dein <span class="cu">Pluspol (+)</span>. Im <strong>letzten Fach</strong> steckt am Ende eine Schraube ohne Partner. Das ist die Schraube der letzten Brücke bzw. die 9. Schraube, dein <span class="zn">Minuspol (−)</span>.</p>
+      <p class="tipp">In jedem Fach müssen genau eine Schraube und ein Kupferdraht stecken, und die beiden dürfen sich <strong>nicht berühren</strong>.</p>
+    </div></li>
+  </ol>
+
+  <figure>
+    <div class="diagramm">
+      <svg viewBox="0 0 700 250" role="img" aria-labelledby="svg2-t" style="min-width:560px">
+        <title id="svg2-t">Draufsicht auf den Eiswürfelbehälter: acht Fächer in einer Reihe, verbunden durch Brücken aus Schraube und Kupferdraht</title>
+        <defs><marker id="pfeil2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="f-ink"/></marker></defs>
+        <rect x="20" y="70" width="660" height="100" rx="10" fill="none" class="s-ink" stroke-width="2"/>
+        <g id="faecher"></g>
+        <text x="350" y="40" text-anchor="middle">Eiswürfelbehälter von oben, 8 Fächer in Reihe</text>
+        <text x="58" y="205" text-anchor="middle" class="t-kupfer">+ Pol</text>
+        <text x="58" y="222" text-anchor="middle" class="klein">einzelner Kupferdraht</text>
+        <text x="642" y="205" text-anchor="middle" class="t-zink">− Pol</text>
+        <text x="642" y="222" text-anchor="middle" class="klein">letzte Schraube</text>
+        <text x="350" y="205" text-anchor="middle" class="klein">Brücke = <tspan class="t-zink">Schraube</tspan> in Fach n, <tspan class="t-kupfer">Kupfer</tspan> in Fach n + 1</text>
+      </svg>
+    </div>
+    <figcaption>Die Kette: Kupfer → Zink → Kupfer → Zink … In jedem Fach liegen ein Kupferende und eine Schraube nebeneinander.</figcaption>
+  </figure>
+</section>
+
+<section aria-labelledby="h-test">
+  <h2 id="h-test">Testen</h2>
+  <ol class="schritte">
+    <li><div>
+      <h3>LED anschließen</h3>
+      <p>Die LED hat ein <strong>langes Bein (+)</strong> und ein <strong>kurzes Bein (−)</strong>. Verbinde das lange Bein mit dem <span class="cu">Kupferdraht im ersten Fach</span> und das kurze Bein mit der <span class="zn">Schraube im letzten Fach</span>.</p>
+      <p class="tipp">Einen Vorwiderstand brauchst du hier nicht: Die Salzbatterie liefert so wenig Strom, dass die LED nicht kaputtgehen kann.</p>
+    </div></li>
+    <li><div>
+      <h3>Licht aus!</h3>
+      <p>Die LED leuchtet eher schwach. Mach das Zimmer dunkel oder halte die Hände darum. Leuchtet nichts, dreh die LED einmal um und schau in die Fehlersuche weiter unten.</p>
+    </div></li>
+    <li><div>
+      <h3>Messen (mit Multimeter)</h3>
+      <p>Stelle das Multimeter auf <span class="mono">V⎓ 20</span> (Gleichspannung). Rote Spitze an Kupfer, schwarze an die Schraube. Ungefähre Werte:</p>
+      <div class="scroll"><table>
+        <thead><tr><th>Was du misst</th><th>ohne Gerät</th><th>mit LED</th></tr></thead>
+        <tbody>
+          <tr><td>1 Zelle</td><td class="n">0,7–0,9 V</td><td class="n">leuchtet nicht</td></tr>
+          <tr><td>4 Zellen</td><td class="n">2,8–3,6 V</td><td class="n">schwaches Glimmen</td></tr>
+          <tr><td>8 Zellen</td><td class="n">5,5–7 V</td><td class="n">gut sichtbar im Dunkeln</td></tr>
+        </tbody>
+      </table></div>
+      <p class="tipp">Mit LED gemessen sinkt die Spannung deutlich. Die Batterie kann nur wenig Strom liefern, das ist normal.</p>
+    </div></li>
+  </ol>
+</section>
+
+<section aria-labelledby="h-rechner">
+  <h2 id="h-rechner">Was kann meine Batterie antreiben?</h2>
+  <p>Stell ein, wie viele Zellen du hast und welche Metalle du benutzt. Die Werte sind Richtwerte, deine echten Messwerte können abweichen.</p>
+  <div class="rechner">
+    <div class="eingaben">
+      <label for="zellen">Anzahl Zellen: <span id="zellen-zahl" class="mono">8</span>
+        <input type="range" id="zellen" min="1" max="14" value="8">
+      </label>
+      <label for="metall">Metallpaar
+        <select id="metall">
+          <option value="0.8" selected>Kupfer + verzinkte Schraube</option>
+          <option value="0.6">Kupfer + Alufolie</option>
+          <option value="0.45">Kupfer + Eisennagel (unverzinkt)</option>
+        </select>
+      </label>
+    </div>
+    <div class="zellen-anzeige" id="zellen-anzeige" aria-hidden="true"></div>
+    <div class="werte">
+      <div class="wert"><b id="u-leer">6,4 V</b><span>ohne Gerät</span></div>
+      <div class="wert"><b id="u-last">≈ 3,8 V</b><span>mit LED angeschlossen</span></div>
+    </div>
+    <ul class="geraete" id="geraete"></ul>
+  </div>
+</section>
+
+<section aria-labelledby="h-fehler">
+  <h2 id="h-fehler">Fehlersuche</h2>
+  <div>
+    <details><summary>Die LED leuchtet gar nicht</summary>
+      <p>LED umdrehen: Langes Bein gehört an Kupfer. Dann prüfen, ob jede Brücke richtig herum steckt (Schraube und Kupfer abwechselnd) und alle Drahtwicklungen fest sitzen.</p></details>
+    <details><summary>Das Multimeter zeigt viel weniger als erwartet</summary>
+      <p>Wahrscheinlich ist Salzwasser über einen Steg gelaufen. Wasser etwas abgießen, Stege trockenwischen. Oder eine Schraube berührt im selben Fach das Kupfer.</p></details>
+    <details><summary>Eine Zelle zeigt 0 V oder einen negativen Wert</summary>
+      <p>Miss jede Zelle einzeln. Bei 0 V fehlt Kontakt oder Wasser. Ist der Wert negativ, steckt die Brücke verkehrt herum.</p></details>
+    <details><summary>Am Anfang ging es, nach einer Weile wird es schwächer</summary>
+      <p>Normal. Am Kupfer sammeln sich winzige Gasbläschen, und die Schrauben setzen sich zu. Kurz rütteln oder die Drähte herausnehmen, abwischen und wieder einsetzen.</p></details>
+    <details><summary>Kann ich damit mein Handy laden oder einen Motor drehen?</summary>
+      <p>Nein. Die Spannung würde mit genug Zellen reichen, aber der Strom ist viel zu klein. Eine LED braucht 1–20 Milliampere, ein Motor eher 100–500, ein Handy noch mehr. Die Salzbatterie schafft etwa 1–3 Milliampere.</p></details>
+  </div>
+</section>
+
+<section aria-labelledby="h-forschen">
+  <h2 id="h-forschen">Weiter forschen</h2>
+  <p>Ändere immer nur <strong>eine</strong> Sache und miss dann die Spannung von 4 Zellen. So findest du heraus, was wirklich etwas bewirkt.</p>
+  <div class="scroll"><table class="protokoll">
+    <thead><tr><th>Versuch</th><th>Was ich ändere</th><th>Spannung (V)</th><th>LED hell?</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Normaler Aufbau (Vergleich)</td><td></td><td></td></tr>
+      <tr><td>2</td><td>Nur Leitungswasser, ohne Salz</td><td></td><td></td></tr>
+      <tr><td>3</td><td>Doppelt so viel Salz</td><td></td><td></td></tr>
+      <tr><td>4</td><td>Kupfer als große Spirale (mehr Fläche)</td><td></td><td></td></tr>
+      <tr><td>5</td><td>Alufolie statt Schraube</td><td></td><td></td></tr>
+      <tr><td>6</td><td>Essig statt Salzwasser</td><td></td><td></td></tr>
+    </tbody>
+  </table></div>
+  <p class="tipp">Schreib die Tabelle ab und trag deine Messwerte ein. Kleiner Hinweis: Die Spannung hängt vor allem von den Metallen ab, die Stromstärke eher von der Fläche und vom Salz.</p>
+</section>
+
+<section aria-labelledby="h-weg">
+  <h2 id="h-weg">Aufräumen</h2>
+  <p>Salzwasser in den Ausguss kippen und mit Wasser nachspülen. Schrauben und Draht abspülen, trocknen und aufheben: Sie sind wiederverwendbar. Die Schrauben werden mit der Zeit fleckig, weil sich Zink auflöst. Sind sie ganz grau-rostig, funktionieren sie nicht mehr gut.</p>
+</section>
+
+<footer>Richtwerte für Zimmertemperatur und frisch blanke Metalle. Eine Zelle aus Kupfer und Zink in Salzwasser liefert unbelastet typischerweise 0,7–0,9 V und wenige Milliampere.</footer>
+</div>
+
+<script>
+// Fächer + Brücken in der Draufsicht zeichnen
+(function () {
+  const g = document.getElementById('faecher');
+  const NS = 'http://www.w3.org/2000/svg';
+  const el = (tag, attrs) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); g.appendChild(e); return e; };
+  const n = 8, x0 = 28, w = 80, gap = 2.6;
+  const cx = (i) => x0 + i * w + w / 2 - gap;
+  for (let i = 0; i < n; i++) {
+    el('rect', { x: x0 + i * w, y: 78, width: w - 2 * gap - 2, height: 84, rx: 6, class: 'f-wasser s-wasser', 'stroke-width': 1.5 });
+    const t = el('text', { x: cx(i) - 2, y: 155, 'text-anchor': 'middle', class: 'klein' }); t.textContent = i + 1;
+  }
+  // Einzelner Kupferdraht im ersten Fach (Pluspol)
+  el('path', { d: `M${cx(0) - 18} 120 L${cx(0) - 18} 185`, class: 's-kupfer', 'stroke-width': 4, 'stroke-linecap': 'round', fill: 'none' });
+  el('circle', { cx: cx(0) - 18, cy: 120, r: 6, fill: 'none', class: 's-kupfer', 'stroke-width': 3 });
+  // Brücken: Schraube rechts in Fach i, Kupfer links in Fach i+1
+  for (let i = 0; i < n - 1; i++) {
+    const sx = cx(i) + 16, kx = cx(i + 1) - 18;
+    el('path', { d: `M${sx} 120 C ${sx + 10} 96, ${kx - 10} 96, ${kx} 116`, class: 's-kupfer', 'stroke-width': 3, fill: 'none' });
+    el('circle', { cx: kx, cy: 120, r: 6, fill: 'none', class: 's-kupfer', 'stroke-width': 3 });
+    el('circle', { cx: sx, cy: 120, r: 7, class: 'f-zink' });
+    el('circle', { cx: sx, cy: 120, r: 2.2, class: 'f-bg' });
+  }
+  // Letzte Schraube (Minuspol)
+  const lx = cx(n - 1) + 16;
+  el('circle', { cx: lx, cy: 120, r: 7, class: 'f-zink' });
+  el('circle', { cx: lx, cy: 120, r: 2.2, class: 'f-bg' });
+  el('path', { d: `M${lx} 127 L${lx} 185`, class: 's-zink', 'stroke-width': 3, fill: 'none' });
+})();
+
+// Rechner
+(function () {
+  const z = document.getElementById('zellen'), m = document.getElementById('metall');
+  const fmt = (v) => v.toFixed(1).replace('.', ',') + ' V';
+  const GERAETE = [
+    { name: 'LCD-Uhr / Taschenrechner', grenze: 1.3, last: 0.9, text: 'braucht ca. 1,5 V, aber kaum Strom' },
+    { name: 'Rote LED', grenze: 1.8, last: 0.6, text: 'ab ca. 1,8 V unter Last' },
+    { name: 'Grüne LED', grenze: 2.6, last: 0.6, text: 'ab ca. 2,6 V unter Last' },
+    { name: 'Weiße / blaue LED', grenze: 3.0, last: 0.6, text: 'ab ca. 3 V unter Last' },
+    { name: 'Elektromotor', nie: true, text: 'braucht 100-mal mehr Strom' },
+    { name: 'Handy laden', nie: true, text: 'braucht viel zu viel Strom' },
+  ];
+  function rechne() {
+    const n = +z.value, u = +m.value * n;
+    document.getElementById('zellen-zahl').textContent = n;
+    document.getElementById('u-leer').textContent = fmt(u);
+    document.getElementById('u-last').textContent = '≈ ' + fmt(u * 0.6);
+    document.getElementById('zellen-anzeige').innerHTML = '<i></i>'.repeat(n);
+    const ul = document.getElementById('geraete'); ul.innerHTML = '';
+    for (const g of GERAETE) {
+      let stufe = 'nein', label = 'geht nicht';
+      if (!g.nie) {
+        const ul2 = u * g.last;
+        if (ul2 >= g.grenze * 1.25) { stufe = 'ja'; label = 'klappt'; }
+        else if (ul2 >= g.grenze) { stufe = 'knapp'; label = 'schwach'; }
+      }
+      const li = document.createElement('li');
+      li.innerHTML = `<span class="pill ${stufe}">${label}</span><span><strong>${g.name}</strong> · ${g.text}</span>`;
+      ul.appendChild(li);
+    }
+  }
+  z.addEventListener('input', rechne); m.addEventListener('change', rechne); rechne();
+})();
+</script>
