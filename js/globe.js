@@ -3,7 +3,12 @@ import { CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 import { U, DEG, ll2v, clamp, smooth, esc, fmtCoord, IS_ARTIFACT } from './util.js';
 
 const TOPO_URL = new URL('../data/countries-50m.json', import.meta.url).href;
-const TILE_URL = (z, x, y) => `https://${'abcd'[(x + y) % 4]}.basemaps.cartocdn.com/dark_all/${z}/${x}/${y}.png`;
+// Freie Kartenquellen ohne API-Key (CARTO verlangt inzwischen einen Key):
+// 1. Esri-Satellitenbilder (wirken als blaues Hologramm sehr plastisch), 2. Ersatz: OpenStreetMap
+const TILE_SOURCES = [
+  (z, x, y) => `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}`,
+  (z, x, y) => `https://tile.openstreetmap.org/${z}/${x}/${y}.png`,
+];
 
 /* ---------- TopoJSON-Dekodierung (ohne Abhängigkeit) ---------- */
 function decodeArcs(topo) {
@@ -249,7 +254,7 @@ export class Globe {
   requestPatch(lat, lon, alt, aspect) {
     if (alt > 0.95 || IS_ARTIFACT) return;
     const viewDeg = alt * 0.83 / DEG * Math.max(1, aspect) * 1.2;
-    const z = clamp(Math.round(Math.log2(360 / (viewDeg * 1.5 / 6))), 4, 16);
+    const z = clamp(Math.round(Math.log2(360 / (viewDeg * 1.5 / 6))), 4, 18);
     const n = 2 ** z;
     const latR = clamp(lat, -84, 84) * DEG;
     const fx = (lon + 180) / 360 * n, fy = (1 - Math.log(Math.tan(latR) + 1 / Math.cos(latR)) / Math.PI) / 2 * n;
@@ -272,8 +277,9 @@ export class Globe {
       jobs.push(new Promise(res => {
         const im = new Image(); im.crossOrigin = 'anonymous';
         im.onload = () => { ctx.drawImage(im, i * S, j * S); tex.needsUpdate = true; res(true); };
-        im.onerror = () => res(false);
-        im.src = TILE_URL(z, tx, ty);
+        let src = 0;
+        im.onerror = () => { if (++src < TILE_SOURCES.length) im.src = TILE_SOURCES[src](z, tx, ty); else res(false); };
+        im.src = TILE_SOURCES[0](z, tx, ty);
       }));
     }
     // Geometrie
@@ -300,7 +306,7 @@ export class Globe {
         void main(){ vec3 c=texture2D(uMap,vUv).rgb; float l=dot(c,vec3(0.3,0.59,0.11));
           vec2 d=abs(vUv-0.5)*2.0; float edge=1.0-smoothstep(0.55,1.0,max(d.x,d.y));
           float scan=0.85+0.15*sin(vUv.y*900.0-uTime*4.0);
-          vec3 col=vec3(0.16,0.66,1.0)*min(pow(l,0.85)*1.25,0.9)*scan + vec3(0.0,0.015,0.035);
+          vec3 col=vec3(0.16,0.66,1.0)*min(pow(l,1.35)*1.9,1.0)*0.85*scan + vec3(0.0,0.015,0.035);
           gl_FragColor=vec4(col, uOp*edge); }`,
       transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2,
     });

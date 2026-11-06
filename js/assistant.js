@@ -49,7 +49,7 @@ export class Assistant {
         u.lang = 'de-DE'; if (this.voice) u.voice = this.voice;
         u.rate = 1.04; u.pitch = 0.92;
         u.onstart = () => { this.speaking = true; ui.setState('SPRICHT', 'think'); };
-        u.onend = u.onerror = () => { this.speaking = false; ui.setState('ONLINE'); res(); if (this.convo && !this.wake) setTimeout(() => this.listenOnce(), 350); };
+        u.onend = u.onerror = () => { this.speaking = false; ui.setState('ONLINE'); res(); if (this.convo && !this.wake) setTimeout(() => { if (!this.listening && !this.speaking) this.listenOnce(); }, 600); };
         speechSynthesis.speak(u);
         setTimeout(res, 25000);
       } catch { res(); }
@@ -66,35 +66,60 @@ export class Assistant {
     this.rec.lang = 'de-DE';
     this.rec.interimResults = true;
     this.rec.maxAlternatives = 1;
+    this.heard = '';
+    const input = document.getElementById('cmd');
+    // Alles Gehörte sammeln. iPhone-Safari markiert Ergebnisse oft nie als "final" –
+    // deshalb wird nach einer kurzen Sprechpause selbst beendet und das Gehörte verwendet.
     this.rec.onresult = e => {
       let final = '', interim = '';
-      for (let i = e.resultIndex; i < e.results.length; i++) {
+      for (let i = 0; i < e.results.length; i++) {
         const r = e.results[i];
-        if (r.isFinal) final += r[0].transcript; else interim += r[0].transcript;
+        if (r.isFinal) final += r[0].transcript + ' '; else interim += r[0].transcript;
       }
-      const input = document.getElementById('cmd');
-      if (interim) input.value = interim;
-      if (final) {
-        input.value = '';
-        if (this.wake) {
-          const m = final.toLowerCase().match(/jarvis[,.!]?\s*(.*)$/);
-          if (m) { if (m[1].trim()) this.handle(m[1]); else this.say('Ja?'); }
-        } else this.handle(final);
-      }
+      this.heard = (final + interim).replace(/\s+/g, ' ').trim();
+      if (this.heard) input.value = this.heard;
+      clearTimeout(this.silence);
+      this.silence = setTimeout(() => { try { this.rec.stop(); } catch { /* */ } }, interim ? 1500 : 900);
     };
-    this.rec.onstart = () => { this.listening = true; ui.setState(this.wake ? 'WARTET AUF „JARVIS“' : 'HÖRT ZU …', 'listen'); document.getElementById('micBtn').classList.add('on'); };
+    this.rec.onstart = () => {
+      this.listening = true; this.heard = ''; this.recError = null;
+      ui.setState(this.wake ? 'WARTET AUF „JARVIS“' : 'HÖRT ZU …', 'listen');
+      document.getElementById('micBtn').classList.add('on');
+      clearTimeout(this.silence);
+      if (!this.wake) this.silence = setTimeout(() => { try { this.rec.stop(); } catch { /* */ } }, 8000);
+    };
     this.rec.onend = () => {
+      clearTimeout(this.silence);
       this.listening = false; document.getElementById('micBtn').classList.remove('on');
       if (!this.speaking) ui.setState('ONLINE');
-      if (this.wake) setTimeout(() => { try { this.rec.start(); } catch { /* läuft */ } }, 250);
+      const text = this.heard.trim(); this.heard = '';
+      if (this.wake) {
+        const m = text.toLowerCase().match(/(?:jarvis|dschawis|tschawis|javis|jarwis)[,.!]?\s*(.*)$/);
+        if (m) { input.value = ''; if (m[1].trim()) this.handle(m[1]); else this.say('Ja?'); }
+        else if (text) input.value = '';
+        setTimeout(() => { try { this.rec.start(); } catch { /* läuft */ } }, 300);
+        return;
+      }
+      if (text) { input.value = ''; this.handle(text); return; }
+      if (this.recError === 'no-speech' || !this.recError) ui.log('ai', 'Ich habe nichts verstanden. Tippen Sie aufs Mikrofon und sprechen Sie direkt danach – oder schreiben Sie einfach.');
     };
-    this.rec.onerror = e => { if (e.error === 'not-allowed') { this.wake = false; this.say('Ich habe keinen Zugriff auf das Mikrofon.'); } };
+    this.rec.onerror = e => {
+      this.recError = e.error;
+      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+        this.wake = false; this.convo = false;
+        document.getElementById('tglWake')?.classList.remove('on'); document.getElementById('tglConvo')?.classList.remove('on');
+        const ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
+        this.say(ios ? 'Ich darf das Mikrofon nicht benutzen. Erlauben Sie es in den iPhone-Einstellungen unter Safari, Mikrofon. Außerdem muss unter Einstellungen, Siri, die Diktierfunktion eingeschaltet sein.' : 'Ich habe keinen Zugriff auf das Mikrofon. Bitte erlauben Sie es in den Browser-Einstellungen.');
+      } else if (e.error === 'audio-capture') this.say('Ich finde kein Mikrofon.');
+      else if (e.error === 'network') ui.log('ai', 'Die Spracherkennung braucht eine Internetverbindung.');
+    };
   }
   listenOnce() {
-    if (!this.rec) return this.say('Spracherkennung wird von diesem Browser nicht unterstützt. Nutzen Sie Chrome oder Edge – oder tippen Sie einfach.');
-    speechSynthesis?.cancel();
-    this.rec.continuous = false;
-    try { this.rec.start(); } catch { this.rec.stop(); }
+    if (!this.rec) return this.say('Spracherkennung wird von diesem Browser nicht unterstützt. Nutzen Sie Chrome, Edge oder Safari – oder tippen Sie einfach.');
+    if (this.listening && !this.wake) { try { this.rec.stop(); } catch { /* */ } return; } // zweites Tippen = fertig
+    try { speechSynthesis?.cancel(); } catch { /* */ }
+    this.rec.continuous = true;
+    try { this.rec.start(); } catch { /* läuft schon */ }
   }
   setWake(on) {
     if (!this.rec) { this.say('Spracherkennung wird von diesem Browser nicht unterstützt.'); return false; }
