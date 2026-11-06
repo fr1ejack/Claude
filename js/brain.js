@@ -80,6 +80,18 @@ export class Brain {
     return out;
   }
   reset() { this.history = []; }
+
+  /** KI konstruiert ein Hologramm (JSON-Bauteilliste) */
+  async designJSON(prompt) {
+    const r = await this.engine.chat.completions.create({ messages: [{ role: 'user', content: prompt }], temperature: 0.4, max_tokens: 2500, response_format: { type: 'json_object' } });
+    return parseJSON(r.choices?.[0]?.message?.content || '');
+  }
+}
+
+export function parseJSON(t) {
+  const s = String(t), a = s.indexOf('{'), e = s.lastIndexOf('}');
+  if (a < 0 || e < a) throw new Error('kein JSON');
+  return JSON.parse(s.slice(a, e + 1));
 }
 
 /*
@@ -95,6 +107,10 @@ export class ClaudeBrain extends Brain {
     if (!sample) { this.state = 'error'; this.emit('Claude ist in dieser Ansicht nicht verfügbar'); throw new Error('sample nicht verfügbar'); }
     this.sample = sample; this.model = 'Claude';
     this.state = 'ready'; this.progress = 1; this.emit('Bereit');
+  }
+  async designJSON(prompt) {
+    try { return await this.sample.json(prompt, { modelTier: 'default' }); }
+    catch (e) { if (e?.code === 'invalid_json' && e.text) return parseJSON(e.text); throw e; }
   }
   async answer(question, { context = '', location = '', onToken } = {}) {
     if (!this.ready) throw new Error('Gehirn nicht geladen');

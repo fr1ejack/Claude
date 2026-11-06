@@ -1,6 +1,6 @@
 import * as S from './services.js';
 import * as ui from './ui.js';
-import { findObject } from './objects.js';
+import { findObject, buildFromSpec, HOLO_PROMPT } from './objects.js';
 import { fmt, fmtCoord, haversine, compass, esc, IS_ARTIFACT } from './util.js';
 import { memory, keywords } from './memory.js';
 
@@ -156,7 +156,7 @@ export class Assistant {
       if (lib && (!app.obj || app.obj.key !== lib.key)) await app.showObject(lib);
       if (!app.obj || !app.obj.parts.length) return this.say('Es ist gerade kein Objekt geladen, das ich öffnen könnte. Sagen Sie zum Beispiel: Zeig mir einen PS5-Controller.');
       app.explode(true);
-      return this.say(`Öffne ${app.obj.title}. Ich zerlege es in ${app.obj.parts.length} Komponenten: ${app.obj.parts.slice(0, 6).map(p => p.name).join(', ')} und weitere.`);
+      return this.say(`Öffne ${app.obj.title}. Ich zerlege es in ${app.obj.parts.length} Komponenten: ${app.obj.parts.slice(0, 6).map(p => p.name).join(', ')}${app.obj.parts.length > 6 ? ' und weitere' : ''}.`);
     }
     if (/(schliess|zusammen(bauen|setzen|fügen|fuegen)|mach .*zu\b|wieder zu)/.test(tf) && app.mode === 'object' && !/(karte|globus|erde)/.test(tf)) {
       app.explode(false);
@@ -237,7 +237,7 @@ export class Assistant {
     }
 
     // Zeigen / Hologramm
-    m = tf.match(/wie sieht (?:ein |eine |einen |der |die |das )?(.+?) aus/) || tf.match(/(?:zeig|zeige|präsentier|praesentier|visualisier|projizier|hologramm (?:von|eines|einer)?|lade|öffne|oeffne)\s*(?:mir|uns)?\s*(.+)$/);
+    m = tf.match(/wie sieht (?:ein |eine |einen |der |die |das )?(.+?) aus/) || tf.match(/(?:zeige|zeig|präsentier|praesentier|visualisier|projizier|hologramm (?:von|eines|einer)?|lade|öffne|oeffne)\s*(?:mir|uns)?\s*(.+)$/);
     if (m) {
       const raw = m[1].trim();
       const subj = cleanSubject(raw);
@@ -255,7 +255,7 @@ export class Assistant {
         const place = await S.geocode(subj);
         if (place && place.importance > 0.25) return this.showPlace(place);
       }
-      return this.knowledge(subj, true);
+      return this.holoGen(subj);
     }
 
     // Ort suchen
@@ -307,6 +307,28 @@ export class Assistant {
     const ans = await b.answer(text, { context: ctx, location: loc, onToken: tk => ui.setLogText(el, tk) });
     ui.setLogText(el, ans);
     return this.say(ans || 'Dazu fällt mir leider nichts ein.', { log: false });
+  }
+
+  /** Beliebigen Gegenstand von der KI als zerlegbares Hologramm konstruieren lassen */
+  async holoGen(subj) {
+    const b = this.brain;
+    if (!b.ready && b.state !== 'loading') { try { await b.load(); } catch { /* */ } }
+    if (!b.ready || !b.designJSON) return this.knowledge(subj, true);
+    const key = 'jarvis.holo.' + subj.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '-');
+    let spec = null;
+    try { spec = JSON.parse(localStorage.getItem(key) || 'null'); } catch { /* */ }
+    if (!spec) {
+      await this.app.showCore();
+      this.say(`Ich konstruiere ein Hologramm von ${subj}. Einen Moment.`);
+      ui.setState('KONSTRUIERE …', 'think');
+      try { spec = await b.designJSON(HOLO_PROMPT(subj)); }
+      catch (e) { console.warn(e); return this.say('Die Konstruktion ist leider fehlgeschlagen. Versuchen Sie es bitte noch einmal.'); }
+    }
+    let obj;
+    try { obj = buildFromSpec(spec, key); } catch { return this.say('Daraus konnte ich kein Modell bauen. Versuchen Sie es bitte noch einmal.'); }
+    try { localStorage.setItem(key, JSON.stringify(spec)); } catch { /* */ }
+    await this.app.showObject({ key, build: () => obj });
+    return this.say(`Hier ist das Hologramm: ${obj.title}. ${obj.subtitle}. Es besteht aus ${obj.parts.length} Bauteilen – sagen Sie „öffne ihn“, und ich zerlege es.`);
   }
 
   knowledge(subj, holo, pre) {

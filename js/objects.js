@@ -270,3 +270,64 @@ export function buildImageHologram(title, imgUrl) {
   }
   return { key: 'image:' + title, title, subtitle: 'Holografische Projektion', group, parts: [], shared, dist: 6.2, distOpen: 6.2, el: 0.15, imageMat: mat, facts: [] };
 }
+
+/* ======================= Von der KI konstruierte Hologramme =======================
+ * Die KI liefert eine Bauteil-Liste aus Grundkörpern (JSON), daraus entsteht ein zerlegbares Hologramm.
+ * So kann Jarvis JEDEN Gegenstand darstellen – vom Mausefallenauto bis zum Raketentriebwerk. */
+export const HOLO_PROMPT = subject => `Du bist ein 3D-Konstrukteur für ein holografisches Display. Baue ein vereinfachtes, aber klar erkennbares 3D-Modell von: "${subject}" aus geometrischen Grundkörpern. Das Modell wird in einer Explosionsansicht zerlegt, deshalb besteht es aus seinen echten Bauteilen (außen und innen).
+
+Antworte NUR mit JSON in genau diesem Format:
+{"title":"Name auf Deutsch","subtitle":"kurze Beschreibung","facts":["Fakt 1","Fakt 2","Fakt 3"],"parts":[{"name":"Bauteil","info":"Funktion in wenigen Wörtern","color":"shell","explode":[0,1.5,0],"shapes":[{"type":"box","size":[1,0.2,2],"pos":[0,0,0],"rot":[0,0,0]}]}]}
+
+Regeln:
+- y zeigt nach oben, +z ist vorne. Das ganze Objekt ist etwa 4 Einheiten breit, Mittelpunkt bei 0,0,0.
+- type: box (size=[Breite,Höhe,Tiefe]), cylinder (size=[Radius,Höhe], senkrecht entlang y), cone (size=[Radius,Höhe], Spitze nach oben), sphere (size=[Radius]), torus (size=[Radius,Rohrdicke], Ring in der x-y-Ebene), capsule (size=[Radius,Länge], entlang y).
+- rot in Grad. Beispiel: ein Rad ist ein cylinder mit rot [0,0,90] (Achse entlang x).
+- 6 bis 16 Bauteile, je Bauteil 1 bis 8 Formen. pos sind absolute Positionen.
+- color: shell (Gehäuse/Rahmen), inner (Innenteile), board (Elektronik), metal (Metall/Mechanik), hot (Antrieb/Energie/Feder), glass (Glas/Display).
+- explode: Richtung und Weite (1 bis 2,5) für die Explosionsansicht – äußere Teile nach außen/oben, innere eher wenig.
+- Proportionen und Anordnung wie beim echten Gegenstand.`;
+
+const SHAPE = {
+  box: s => rbox(s[0], s[1], s[2], Math.min(s[0], s[1], s[2]) * 0.12),
+  cylinder: s => cyl(s[0], s[0], s[1], 32),
+  cone: s => new THREE.ConeGeometry(s[0], s[1], 32),
+  sphere: s => new THREE.SphereGeometry(s[0], 32, 16),
+  torus: s => new THREE.TorusGeometry(s[0], Math.min(s[1], s[0] * 0.9), 12, 48),
+  capsule: s => new THREE.CapsuleGeometry(s[0], Math.max(0.01, s[1]), 6, 16),
+};
+const num = (v, d = 0) => (Number.isFinite(+v) ? +v : d);
+const vec = (a, d = 0) => [0, 1, 2].map(i => num(a?.[i], d));
+
+export function buildFromSpec(spec, key = 'ai') {
+  const B = new Builder();
+  const parts = (Array.isArray(spec?.parts) ? spec.parts : []).slice(0, 20);
+  parts.forEach((p, i) => {
+    const g = new THREE.Group();
+    for (const sh of (Array.isArray(p.shapes) ? p.shapes : []).slice(0, 10)) {
+      const make = SHAPE[String(sh.type || '').toLowerCase()] || SHAPE.box;
+      const size = vec(sh.size, 0.3).map(v => Math.min(8, Math.max(0.01, Math.abs(v))));
+      let geo; try { geo = make(size); } catch { continue; }
+      const m = B.mesh(geo, { color: COL[p.color] ?? COL.shell, base: p.color === 'hot' || p.color === 'board' ? 0.12 : 0.05, edgeAngle: 30 });
+      m.position.set(...vec(sh.pos));
+      m.rotation.set(...vec(sh.rot).map(d => d * Math.PI / 180));
+      g.add(m);
+    }
+    if (!g.children.length) return;
+    B.part(String(p.name || `Bauteil ${i + 1}`).slice(0, 40), String(p.info || '').slice(0, 80), g, vec(p.explode).map(v => Math.max(-4, Math.min(4, v))), Math.min(0.55, i * 0.04));
+  });
+  if (!B.parts.length) throw new Error('leeres Modell');
+  // auf Anzeigegröße normalisieren und zentrieren
+  const box = new THREE.Box3().setFromObject(B.root);
+  const size = box.getSize(new THREE.Vector3()), c = box.getCenter(new THREE.Vector3());
+  const s = Math.min(5, Math.max(0.15, 3.8 / Math.max(size.x, size.y * 1.3, size.z, 0.01)));
+  B.root.scale.setScalar(s);
+  B.root.position.copy(c).multiplyScalar(-s);
+  for (const p of B.parts) { if (p.off.length() > 2.2) p.off.setLength(2.2); p.off.multiplyScalar(1 / s); }
+  const wrap = new THREE.Group(); wrap.add(B.root); wrap.position.y = 0.2;
+  return {
+    key, title: String(spec.title || 'Hologramm').slice(0, 60), subtitle: String(spec.subtitle || '').slice(0, 120),
+    group: wrap, parts: B.parts, shared: B.shared, dist: 6.6, distOpen: 10.5, el: 0.45,
+    facts: (Array.isArray(spec.facts) ? spec.facts : []).slice(0, 4).map(String),
+  };
+}

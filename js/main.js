@@ -355,9 +355,9 @@ function updateCamera(dt) {
     camera.far = alt < 0.5 ? 8 : 400;
   } else {
     app.ocam.dist = lerp(app.ocam.dist, app.ocam.tgtDist, Math.min(1, dt * 2.5));
-    const d = app.ocam.dist, el = app.ocam.el;
+    const d = app.ocam.dist * (camera.aspect < 0.8 ? 1.25 : 1), el = app.ocam.el;
     camera.up.set(0, 1, 0);
-    const ty = 0.15 + 0.35 * app.explodeT, px = innerWidth > 900 ? 0.5 : 0;
+    const ty = 0.15 + 0.35 * app.explodeT - (camera.aspect < 0.8 ? 1.1 : 0), px = innerWidth > 900 ? 0.5 : 0;
     camera.position.set(px, Math.sin(el) * d + ty, Math.cos(el) * d);
     camera.lookAt(px, ty, 0);
     camera.near = 0.05; camera.far = 400;
@@ -385,12 +385,14 @@ function frame(now) {
     // Explosion
     const sp = rdt / 2.2;
     app.explodeT = app.explodeTarget > app.explodeT ? Math.min(app.explodeTarget, app.explodeT + sp) : Math.max(app.explodeTarget, app.explodeT - sp);
-    for (const p of o.parts) {
+    const narrow = innerWidth < 700, focus = Math.floor(U.time.value / 2.4) % Math.max(1, o.parts.length);
+    o.parts.forEach((p, i) => {
       const k = easeInOut(clamp((app.explodeT * 1.6 - p.delay) / 1.0, 0, 1));
       p.obj.position.copy(p.base).addScaledVector(p.off, k);
-      p.label.element.classList.toggle('show', k > 0.85);
+      // Auf dem Handy wird immer nur ein Bauteil beschriftet (wechselt automatisch) – sonst überlappt alles
+      p.label.element.classList.toggle('show', k > 0.85 && (!narrow || i === focus));
       if (p.spin) for (const s of p.spin) s.rotation.y += dt * 18;
-    }
+    });
   }
 
   updateCamera(dt);
