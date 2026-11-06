@@ -27,6 +27,35 @@
   </script>
 </head>
 <body>
+  <!-- Zugangscode-Schloss (nur Website-Version). Gespeichert ist nur ein Hash, nicht der Code selbst. -->
+  <div id="lock" hidden>
+    <div class="boot-ring"><div></div><div></div><div></div></div>
+    <h1>J.A.R.V.I.S.</h1>
+    <p class="boot-sub">Zugang gesichert</p>
+    <form id="lockForm" autocomplete="off">
+      <input id="lockCode" type="password" placeholder="Zugangscode" autocapitalize="off" spellcheck="false">
+      <button type="submit" id="lockBtn">ENTSPERREN</button>
+    </form>
+    <p id="lockMsg" class="boot-hint">Diesen Code bekommst du von der Person, die dir den Link geschickt hat.</p>
+  </div>
+  <script>
+    (function () {
+      var HASH = 'f02847ca0236b9c1513fb369202adf3bc0b2539d24705f1016f7541c5ab8abe9';
+      var lock = document.getElementById('lock');
+      var ok = false; try { ok = localStorage.getItem('jarvis.access') === HASH; } catch (e) {}
+      if (ok || !(window.crypto && crypto.subtle)) return;
+      lock.hidden = false;
+      document.getElementById('lockForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var code = document.getElementById('lockCode').value.trim().toLowerCase();
+        crypto.subtle.digest('SHA-256', new TextEncoder().encode('jarvis:' + code)).then(function (buf) {
+          var hex = Array.from(new Uint8Array(buf)).map(function (b) { return b.toString(16).padStart(2, '0'); }).join('');
+          if (hex === HASH) { try { localStorage.setItem('jarvis.access', HASH); } catch (e) {} lock.classList.add('gone'); setTimeout(function () { lock.hidden = true; }, 900); }
+          else { var m = document.getElementById('lockMsg'); m.textContent = 'Falscher Code. Bitte noch einmal versuchen.'; m.style.color = '#ffb547'; document.getElementById('lockCode').select(); }
+        });
+      });
+    })();
+  </script>
   <div id="stage"></div>
   <div class="fx fx-vignette"></div>
   <div class="fx fx-scan"></div>
