@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+  <title>J.A.R.V.I.S. Holo-Interface</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#01050b">
+  <meta name="description" content="J.A.R.V.I.S. – holografischer KI-Assistent mit 3D-Globus, Live-Flugdaten und Sprachsteuerung">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="JARVIS">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <!-- Zugangscode-Schloss (nur Website-Version). Gespeichert ist nur ein Hash, nicht der Code selbst. -->
+  <div id="lock" hidden>
+    <div class="boot-ring"><div></div><div></div><div></div></div>
+    <h1>J.A.R.V.I.S.</h1>
+    <p class="boot-sub">Zugang gesichert</p>
+    <form id="lockForm" autocomplete="off">
+      <input id="lockCode" type="password" placeholder="Zugangscode" autocapitalize="off" spellcheck="false">
+      <button type="submit" id="lockBtn">ENTSPERREN</button>
+    </form>
+    <p id="lockMsg" class="boot-hint">Diesen Code bekommst du von der Person, die dir den Link geschickt hat.</p>
+  </div>
+  <script>
+    (function () {
+      var HASH = 'f02847ca0236b9c1513fb369202adf3bc0b2539d24705f1016f7541c5ab8abe9';
+      var lock = document.getElementById('lock');
+      var ok = false; try { ok = localStorage.getItem('jarvis.access') === HASH; } catch (e) {}
+      if (ok || !(window.crypto && crypto.subtle)) return;
+      lock.hidden = false;
+      document.getElementById('lockForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var code = document.getElementById('lockCode').value.trim().toLowerCase();
+        crypto.subtle.digest('SHA-256', new TextEncoder().encode('jarvis:' + code)).then(function (buf) {
+          var hex = Array.from(new Uint8Array(buf)).map(function (b) { return b.toString(16).padStart(2, '0'); }).join('');
+          if (hex === HASH) { try { localStorage.setItem('jarvis.access', HASH); } catch (e) {} lock.classList.add('gone'); setTimeout(function () { lock.hidden = true; }, 900); }
+          else { var m = document.getElementById('lockMsg'); m.textContent = 'Falscher Code. Bitte noch einmal versuchen.'; m.style.color = '#ffb547'; document.getElementById('lockCode').select(); }
+        });
+      });
+    })();
+  </script>
+  <div id="stage"></div>
+  <div class="fx fx-vignette"></div>
+  <div class="fx fx-scan"></div>
+  <div class="fx fx-grid"></div>
+  <div class="fx corners"><i></i><i></i><i></i><i></i></div>
+
+  <!-- Boot / Initialisierung -->
+  <div id="boot">
+    <div class="boot-ring"><div></div><div></div><div></div></div>
+    <h1>J.A.R.V.I.S.</h1>
+    <p class="boot-sub">Just A Rather Very Intelligent System</p>
+    <pre id="bootLog"></pre>
+    <button id="bootBtn" disabled>SYSTEM WIRD GELADEN …</button>
+    <p class="boot-hint">Mikrofon &amp; Standort werden nach dem Start angefragt.</p>
+  </div>
+
+  <header class="hud-top">
+    <div class="brand">
+      <div class="logo"><span></span></div>
+      <div>
+        <h1>J.A.R.V.I.S.</h1>
+        <span id="sysState" class="state">OFFLINE</span>
+      </div>
+    </div>
+    <div class="clock">
+      <div id="clock">--:--:--</div>
+      <div id="date"></div>
+    </div>
+    <div class="readout">
+      <span class="lbl">STANDORT</span>
+      <span id="locName">wird ermittelt …</span>
+      <span id="locCoords" class="mono"></span>
+    </div>
+  </header>
+
+  <aside class="hud-left">
+    <div class="panel-title"><span>KOMMUNIKATION</span><i></i></div>
+    <div id="log"></div>
+    <div class="stats">
+      <div><span class="lbl">MODUS</span><span id="stMode">KERN</span></div>
+      <div><span class="lbl">FLUGZIELE</span><span id="stFlights">0</span></div>
+      <div><span class="lbl">DATENLINK</span><span id="stLink">BEREIT</span></div>
+      <div><span class="lbl">FPS</span><span id="stFps">--</span></div>
+      <div><span class="lbl">KI-KERN</span><span id="stBrain">AUS</span></div>
+      <div><span class="lbl">GEDÄCHTNIS</span><span id="stMem">0</span></div>
+    </div>
+  </aside>
+
+  <aside class="hud-right">
+    <section id="ctxPanel" class="panel" hidden></section>
+  </aside>
+
+  <footer class="hud-bottom">
+    <div id="chips"></div>
+    <form id="cmdForm" autocomplete="off">
+      <button type="button" id="micBtn" title="Sprechen (oder Leertaste halten)">
+        <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg>
+      </button>
+      <input id="cmd" placeholder="Frag Jarvis … z. B. „Wo ist Dortmund?“" spellcheck="false">
+      <button type="submit" class="send">SENDEN</button>
+    </form>
+    <div class="toggles">
+      <button type="button" id="tglFlights" class="tgl">✈ FLUGVERKEHR</button>
+      <button type="button" id="tglVoice" class="tgl on">🔊 STIMME</button>
+      <button type="button" id="tglWake" class="tgl">◉ „JARVIS“-WECKWORT</button>
+      <button type="button" id="btnBrain" class="tgl">🧠 KI-KERN</button>
+      <button type="button" id="tglConvo" class="tgl">💬 GESPRÄCH</button>
+      <button type="button" id="btnHome" class="tgl">⟲ KERN</button>
+      <button type="button" id="btnShare" class="tgl">↗ TEILEN</button>
+      <button type="button" id="btnInstall" class="tgl" hidden>⤓ APP INSTALLIEREN</button>
+    </div>
+  </footer>
+
+  <div id="attrib">Karte © OpenStreetMap-Mitwirkende © CARTO · Flugdaten adsb.lol / OpenSky Network · Geodaten Natural Earth · Wikipedia · Open-Meteo</div>
+
+  <script type="module" src="js/main.js"></script>
+  <script>
+    // Installierbare App: Service Worker unabhängig vom Hauptprogramm registrieren
+    if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost'))
+      navigator.serviceWorker.register('./sw.js').catch(e => console.warn('Service Worker:', e));
+  </script>
+</body>
+</html>
