@@ -133,3 +133,37 @@ export class ClaudeBrain extends Brain {
     }
   }
 }
+
+/*
+ * Cloud-Gehirn ohne API-Key und ohne Download: Pollinations (kostenloser, offener KI-Dienst).
+ * Standard auf der Website, damit Jarvis sofort frei antworten und Hologramme konstruieren kann.
+ * Hinweis: Fragen werden dafür an den Dienst text.pollinations.ai geschickt.
+ */
+const POLLI = 'https://text.pollinations.ai/openai';
+export class CloudBrain extends Brain {
+  static supported() { return true; }
+  async load() { this.model = 'Cloud (Pollinations)'; this.state = 'ready'; this.progress = 1; this.emit('Bereit'); }
+  async chat(messages, { json = false, maxTokens = 600 } = {}) {
+    const c = new AbortController(); const t = setTimeout(() => c.abort(), json ? 90000 : 45000);
+    try {
+      const r = await fetch(POLLI, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: c.signal,
+        body: JSON.stringify({ model: 'openai', messages, temperature: json ? 0.4 : 0.7, max_tokens: maxTokens, private: true, referrer: 'jarvis-holo', ...(json ? { response_format: { type: 'json_object' } } : {}) }),
+      });
+      if (!r.ok) throw new Error('Cloud-KI antwortet nicht (' + r.status + ')');
+      const ct = r.headers.get('content-type') || '';
+      if (ct.includes('json')) { const d = await r.json(); return d.choices?.[0]?.message?.content ?? d.content ?? ''; }
+      return await r.text();
+    } finally { clearTimeout(t); }
+  }
+  async answer(question, { context = '', location = '', onToken } = {}) {
+    const user = context ? `${question}\n\n[Rechercheergebnisse & Erinnerungen – nur als Hintergrund]\n${context}` : question;
+    const messages = [{ role: 'system', content: this.systemPrompt({ location }) }, ...this.history.slice(-8), { role: 'user', content: user }];
+    let out = String(await this.chat(messages)).replace(/\*\*?|__|#+\s/g, '').trim();
+    onToken?.(out);
+    this.history.push({ role: 'user', content: question }, { role: 'assistant', content: out });
+    if (this.history.length > 16) this.history.splice(0, this.history.length - 16);
+    return out;
+  }
+  async designJSON(prompt) { return parseJSON(await this.chat([{ role: 'user', content: prompt }], { json: true, maxTokens: 3500 })); }
+}

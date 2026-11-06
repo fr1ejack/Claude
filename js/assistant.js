@@ -329,7 +329,13 @@ export class Assistant {
     ui.setState('DENKT …', 'think');
     const el = ui.log('ai', IS_ARTIFACT ? 'Denke nach …' : '…');
     const loc = this.app.userLoc ? [this.app.userLoc.city, this.app.userLoc.region].filter(Boolean).join(', ') : '';
-    const ans = await b.answer(text, { context: ctx, location: loc, onToken: tk => ui.setLogText(el, tk) });
+    let ans;
+    try { ans = await b.answer(text, { context: ctx, location: loc, onToken: tk => ui.setLogText(el, tk) }); }
+    catch (e) {
+      console.warn(e); el.remove();
+      if (research[0]) return this.say(research[0].text.split(/(?<=[.!?])\s+/).slice(0, 2).join(' '));
+      return this.say('Mein KI-Dienst antwortet gerade nicht. Versuchen Sie es gleich noch einmal.');
+    }
     ui.setLogText(el, ans);
     return this.say(ans || 'Dazu fällt mir leider nichts ein.', { log: false });
   }
@@ -347,7 +353,7 @@ export class Assistant {
       this.say(`Ich konstruiere ein Hologramm von ${subj}. Einen Moment.`);
       ui.setState('KONSTRUIERE …', 'think');
       try { spec = await b.designJSON(HOLO_PROMPT(subj)); }
-      catch (e) { console.warn(e); return this.say('Die Konstruktion ist leider fehlgeschlagen. Versuchen Sie es bitte noch einmal.'); }
+      catch (e) { console.warn(e); this.say('Die Konstruktion hat nicht geklappt, ich zeige Ihnen stattdessen ein Bild.'); return this.wikiKnowledge(subj, true); }
     }
     let obj;
     try { obj = buildFromSpec(spec, key); } catch { return this.say('Daraus konnte ich kein Modell bauen. Versuchen Sie es bitte noch einmal.'); }
@@ -383,7 +389,7 @@ export class Assistant {
     if (k.coords && /(stadt|gemeinde|land|staat|berg|see|fluss|insel|gebäude|turm|bauwerk)/i.test(k.extract || '')) {
       await this.app.goPlace({ name: k.title, lat: k.coords.lat, lon: k.coords.lon, km: 20 }, { quiet: true });
     } else if (holo) {
-      await this.app.showImageHolo(k.title, k.image);
+      if (k.image) await this.app.showImageHolo(k.title, k.image, k.imageSmall);
     }
     ui.showPanel('WISSENSDATENBANK', `${k.image ? `<img class="holo-img" src="${esc(k.image)}" alt="">` : ''}<h2>${esc(k.title)}</h2><p>${esc(k.extract)}</p>${k.url ? `<p class="hint"><a href="${esc(k.url)}" target="_blank" rel="noopener" style="color:inherit">Quelle: Wikipedia</a></p>` : ''}`);
     const sentences = (k.extract || '').split(/(?<=[.!?])\s+/).slice(0, 2).join(' ');

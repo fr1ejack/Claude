@@ -76,9 +76,10 @@ export async function wiki(q) {
   const hit = s?.query?.search?.[0];
   if (!hit) return null;
   const d = await j(`https://de.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(hit.title.replace(/ /g, '_'))}`);
-  let img = d.thumbnail?.source || null;
-  if (img) img = img.replace(/\/(\d+)px-/, '/800px-');
-  return { title: d.title, extract: d.extract, image: img, coords: d.coordinates, url: d.content_urls?.desktop?.page };
+  const small = d.thumbnail?.source || null;
+  const ow = d.originalimage?.width || 0;
+  const img = d.originalimage?.source && ow && ow <= 1600 ? d.originalimage.source : small;
+  return { title: d.title, extract: d.extract, image: img, imageSmall: small, coords: d.coordinates, url: d.content_urls?.desktop?.page };
 }
 
 /* ---------------- Flugdaten (adsb.lol, Fallback OpenSky) ---------------- */
