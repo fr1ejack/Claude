@@ -11,7 +11,7 @@ import { Buildings } from './buildings.js';
 import { Core, Projector } from './core.js';
 import { buildImageHologram } from './objects.js';
 import { Assistant } from './assistant.js';
-import { Brain, ClaudeBrain, MODELS } from './brain.js';
+import { Brain, ClaudeBrain, CloudBrain, MODELS } from './brain.js';
 import { memory } from './memory.js';
 import * as S from './services.js';
 import * as ui from './ui.js';
@@ -130,9 +130,9 @@ app.showObject = async (entry) => {
   const o = entry.build();
   mountObject(o);
 };
-app.showImageHolo = async (title, url) => {
+app.showImageHolo = async (title, url, fallback) => {
   await hideCurrent();
-  mountObject(buildImageHologram(title, url));
+  mountObject(buildImageHologram(title, url, fallback));
 };
 async function mountObject(o) {
   app.obj = o; app.mode = 'object';
@@ -416,7 +416,10 @@ function frame(now) {
 }
 
 /* ================= Assistent & UI ================= */
-const brain = IS_ARTIFACT ? new ClaudeBrain() : new Brain();
+// Website: Cloud-Gehirn sofort aktiv; optional lokales Modell (Download) im KI-Kern-Menü
+const localBrain = IS_ARTIFACT ? null : new Brain();
+let brain = IS_ARTIFACT ? new ClaudeBrain() : new CloudBrain();
+if (!IS_ARTIFACT) brain.load();
 const assistant = new Assistant(app, brain);
 app.brain = brain;
 const form = document.getElementById('cmdForm');
@@ -459,13 +462,13 @@ function brainStatus() {
   document.getElementById('btnBrain').classList.toggle('on', brain.ready);
 }
 let brainPanelOpen = false;
-brain.onChange((state, progress, text) => {
+[brain, localBrain].filter(Boolean).forEach(b => b.onChange((state, progress, text) => {
   brainStatus();
   if (brainPanelOpen && document.getElementById('brainBar')) {
     document.getElementById('brainBar').style.width = `${Math.round(progress * 100)}%`;
     document.getElementById('brainTxt').textContent = text;
   }
-});
+}));
 setInterval(brainStatus, 3000);
 function openBrainPanel() {
   brainPanelOpen = true;
@@ -488,7 +491,9 @@ function openBrainPanel() {
   const cur = brain.model || memory.model() || MODELS[1].id;
   const ok = Brain.supported();
   ui.showPanel('KI-KERN · GEHIRN', `
-    <p>Jarvis' Gehirn ist ein offenes Sprachmodell, das <b>direkt in Ihrem Browser</b> läuft – ohne API-Key, ohne Kosten, ohne Konto. Es wird einmalig heruntergeladen und danach gespeichert. Vor jeder Antwort recherchiert Jarvis selbst im Internet und merkt sich, was er lernt.</p>
+    <p>Jarvis denkt standardmäßig mit dem <b>Cloud-Gehirn</b> (Pollinations, kostenlos, ohne API-Key, sofort bereit). Ihre Fragen werden dafür an diesen Dienst geschickt.</p>
+    <p>Optional: ein offenes Sprachmodell <b>direkt auf Ihrem Gerät</b> – ganz privat, wird einmalig heruntergeladen. Vor jeder Antwort recherchiert Jarvis selbst im Internet und merkt sich, was er lernt.</p>
+    <p class="hint">Aktiv: ${brain.model || '–'}</p>
     ${ok ? '' : '<p style="color:var(--warn)">⚠ Dieser Browser unterstützt kein WebGPU. Bitte aktuelles Chrome oder Edge (PC/Mac/Android) bzw. Safari ab iOS 26 verwenden.</p>'}
     <div class="models">${MODELS.map(mo => `<label><input type="radio" name="model" value="${mo.id}" ${mo.id === cur ? 'checked' : ''}><b>${mo.name}</b><span class="hint">${mo.size}</span><small>${mo.note}</small></label>`).join('')}</div>
     <button type="button" class="btn" data-id="load">${brain.ready ? 'MODELL WECHSELN' : 'KI-KERN AKTIVIEREN'}</button>
@@ -505,7 +510,7 @@ function openBrainPanel() {
     if (id === 'load') {
       const sel = document.querySelector('input[name=model]:checked')?.value || MODELS[1].id;
       assistant.say('Aktiviere meinen KI-Kern. Beim ersten Mal lade ich das Modell herunter, das kann einige Minuten dauern.');
-      try { await brain.load(sel); assistant.say('KI-Kern online. Sie können mich jetzt alles fragen.'); }
+      try { await localBrain.load(sel); brain = localBrain; assistant.brain = brain; app.brain = brain; brainStatus(); assistant.say('Lokaler KI-Kern online. Ich denke jetzt direkt auf Ihrem Gerät.'); }
       catch (e) { assistant.say('Der KI-Kern konnte nicht starten: ' + (Brain.supported() ? 'zu wenig Grafikspeicher oder Download unterbrochen. Versuchen Sie das leichte Modell.' : 'Ihr Browser unterstützt kein WebGPU.')); }
     } else if (id === 'rules') {
       memory.setRules(document.getElementById('rulesBox').value);
@@ -574,6 +579,6 @@ bootBtn.addEventListener('click', async () => {
   try { await app.myLocation(); } catch { ui.setLocation('Standort unbekannt', ''); ui.setStat('stLink', 'BEREIT'); }
   // KI-Kern automatisch starten, wenn er schon einmal geladen wurde (kommt dann aus dem Cache)
   const saved = memory.model();
-  if (saved && Brain.supported()) brain.load(saved).catch(() => {});
-  else if (Brain.supported() && !IS_ARTIFACT) ui.log('ai', 'Tipp: Aktivieren Sie meinen KI-Kern (🧠 unten), dann kann ich frei mit Ihnen reden und jede Frage beantworten – ganz ohne API-Key.');
+  if (saved && Brain.supported()) localBrain.load(saved).then(() => { brain = localBrain; assistant.brain = brain; app.brain = brain; brainStatus(); }).catch(() => {});
+
 });

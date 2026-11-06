@@ -238,14 +238,14 @@ export function findObject(text) {
 }
 
 /** Erstellt ein holografisches Bild-Panel (für beliebige Dinge aus Wikipedia) */
-export function buildImageHologram(title, imgUrl) {
+export function buildImageHologram(title, imgUrl, fallbackUrl) {
   const shared = sharedState();
   const group = new THREE.Group();
   const mat = new THREE.ShaderMaterial({
     uniforms: { uMap: { value: null }, uReveal: shared.reveal, uFade: shared.fade, uTime: { value: 0 }, uHas: { value: 0 } },
     vertexShader: `varying vec2 vUv; varying vec3 vW; void main(){ vUv=uv; vec4 w=modelMatrix*vec4(position,1.0); vW=w.xyz; gl_Position=projectionMatrix*viewMatrix*w; }`,
     fragmentShader: `uniform sampler2D uMap; uniform float uReveal,uFade,uTime,uHas; varying vec2 vUv; varying vec3 vW;
-      void main(){ if(vW.y>uReveal) discard; vec3 c = uHas>0.5 ? texture2D(uMap,vUv).rgb : vec3(0.2);
+      void main(){ if(vW.y>uReveal) discard; vec3 c = uHas>0.5 ? texture2D(uMap,vUv).rgb : vec3(0.0);
         float l = dot(c, vec3(0.299,0.587,0.114));
         float scan = 0.75+0.25*sin(vUv.y*400.0 - uTime*6.0);
         float glitch = step(0.985, fract(sin(floor(vUv.y*60.0)+floor(uTime*8.0))*43758.5));
@@ -260,13 +260,15 @@ export function buildImageHologram(title, imgUrl) {
   plane.position.y = 0.1;
   group.add(plane);
   if (imgUrl) {
-    new THREE.TextureLoader().setCrossOrigin('anonymous').load(imgUrl, tex => {
+    const loader = new THREE.TextureLoader().setCrossOrigin('anonymous');
+    const onTex = tex => {
       const a = tex.image.width / tex.image.height;
       const h = 2.6, w = Math.min(4.2, h * a);
       plane.geometry.dispose();
       plane.geometry = new THREE.PlaneGeometry(w, w / a);
       mat.uniforms.uMap.value = tex; mat.uniforms.uHas.value = 1;
-    });
+    };
+    loader.load(imgUrl, onTex, undefined, () => { if (fallbackUrl && fallbackUrl !== imgUrl) loader.load(fallbackUrl, onTex); });
   }
   return { key: 'image:' + title, title, subtitle: 'Holografische Projektion', group, parts: [], shared, dist: 6.2, distOpen: 6.2, el: 0.15, imageMat: mat, facts: [] };
 }
