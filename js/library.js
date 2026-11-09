@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
 import { CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
-import { U } from './util.js';
+import { U, IS_ARTIFACT } from './util.js';
 import { lineMat, sharedState } from './materials.js';
 
 /*
@@ -83,8 +83,9 @@ function modelMat(shared, color) {
 
 const loader = new GLTFLoader();
 const cache = new Map();
+// (claude.ai-Artifacts liefern keine .glb-Dateien aus – dort liegen dieselben Bytes unter .glb.wasm)
 function loadGLB(key) {
-  if (!cache.has(key)) cache.set(key, loader.loadAsync(new URL(`../data/models/${key}.glb`, import.meta.url).href));
+  if (!cache.has(key)) cache.set(key, loader.loadAsync(new URL(`../data/models/${key}${IS_ARTIFACT ? '.glb.wasm' : '.glb'}`, import.meta.url).href));
   return cache.get(key);
 }
 
