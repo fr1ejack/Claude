@@ -33,25 +33,31 @@
     <h1>J.A.R.V.I.S.</h1>
     <p class="boot-sub">Zugang gesichert</p>
     <form id="lockForm" autocomplete="off">
+      <input id="lockName" type="text" placeholder="Dein Name" autocapitalize="words" autocomplete="off" spellcheck="false" maxlength="24">
       <input id="lockCode" type="password" placeholder="Zugangscode" autocapitalize="off" spellcheck="false">
       <button type="submit" id="lockBtn">ENTSPERREN</button>
     </form>
-    <p id="lockMsg" class="boot-hint">Diesen Code bekommst du von der Person, die dir den Link geschickt hat.</p>
+    <p id="lockMsg" class="boot-hint">Gib deinen Namen ein und den Code, den du bekommen hast.</p>
   </div>
   <script>
     (function () {
       var HASH = 'f02847ca0236b9c1513fb369202adf3bc0b2539d24705f1016f7541c5ab8abe9';
       var lock = document.getElementById('lock');
-      var ok = false; try { ok = localStorage.getItem('jarvis.access') === HASH; } catch (e) {}
+      var ok = false; try { ok = localStorage.getItem('jarvis.access') === HASH && localStorage.getItem('jarvis.name'); } catch (e) {}
       if (ok || !(window.crypto && crypto.subtle)) return;
       lock.hidden = false;
+      function warn(t) { var m = document.getElementById('lockMsg'); m.textContent = t; m.style.color = '#ffb547'; }
       document.getElementById('lockForm').addEventListener('submit', function (e) {
         e.preventDefault();
+        var name = document.getElementById('lockName').value.trim().replace(/\s+/g, ' ');
         var code = document.getElementById('lockCode').value.trim().toLowerCase();
+        if (name.length < 2) { warn('Bitte gib zuerst deinen Namen ein.'); document.getElementById('lockName').focus(); return; }
         crypto.subtle.digest('SHA-256', new TextEncoder().encode('jarvis:' + code)).then(function (buf) {
           var hex = Array.from(new Uint8Array(buf)).map(function (b) { return b.toString(16).padStart(2, '0'); }).join('');
-          if (hex === HASH) { try { localStorage.setItem('jarvis.access', HASH); } catch (e) {} lock.classList.add('gone'); setTimeout(function () { lock.hidden = true; }, 900); }
-          else { var m = document.getElementById('lockMsg'); m.textContent = 'Falscher Code. Bitte noch einmal versuchen.'; m.style.color = '#ffb547'; document.getElementById('lockCode').select(); }
+          if (hex === HASH) {
+            try { localStorage.setItem('jarvis.access', HASH); localStorage.setItem('jarvis.name', name.slice(0, 24)); } catch (e) {}
+            lock.classList.add('gone'); setTimeout(function () { lock.hidden = true; }, 900);
+          } else { warn('Falscher Code. Bitte noch einmal versuchen.'); document.getElementById('lockCode').select(); }
         });
       });
     })();
