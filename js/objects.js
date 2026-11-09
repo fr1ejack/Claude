@@ -288,7 +288,8 @@ Regeln:
 - 6 bis 16 Bauteile, je Bauteil 1 bis 8 Formen. pos sind absolute Positionen.
 - color: shell (Gehäuse/Rahmen), inner (Innenteile), board (Elektronik), metal (Metall/Mechanik), hot (Antrieb/Energie/Feder), glass (Glas/Display).
 - explode: Richtung und Weite (1 bis 2,5) für die Explosionsansicht – äußere Teile nach außen/oben, innere eher wenig.
-- Proportionen und Anordnung wie beim echten Gegenstand.`;
+- Proportionen und Anordnung wie beim echten Gegenstand.
+- Bei Tieren und Lebewesen: Körper aus Kapseln, Kugeln und Kegeln (Kopf, Hals, Rumpf, Beine, Schwanz, Flügel, Ohren, Augen); Beine stehen auf y≈-1,5. Für „Anatomie“ zusätzlich Skelett (Wirbelsäule, Rippen, Schädel), Herz, Lunge, Magen, Gehirn, Darm als Innenteile (color inner/hot).`;
 
 const SHAPE = {
   box: s => rbox(s[0], s[1], s[2], Math.min(s[0], s[1], s[2]) * 0.12),

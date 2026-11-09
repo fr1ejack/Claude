@@ -56,6 +56,9 @@ Beim Start auf **SYSTEM STARTEN** klicken und Mikrofon und Standort erlauben.
 | „Zeig mir einen PS5-Controller“ | Holografisches 3D-Modell, das sich von unten nach oben aufbaut |
 | „Öffne ihn“ / „Schließe ihn“ | Animierte Explosionsansicht mit beschrifteten Einzelteilen (Platine, Akku, Haptik-Aktuatoren, Trigger-Motoren …) |
 | „Zeig mir eine Drohne“ / „ein Smartphone“ | Weitere zerlegbare Hologramme |
+| „Zeig mir ein Pferd / einen Fuchs / einen Papagei …“ | Echte, animierte 3D-Tiermodelle; „Öffne ihn“ → die KI baut Skelett und Organe |
+| „Zeig mir ein Auto / ein Schachspiel / einen Kühlschrank …“ | 28 echte 3D-Modelle (siehe `data/models/CREDITS.md`), zerlegbar |
+| „Zeig mir ein Mausefallenauto“ (alles andere) | Die KI konstruiert das Objekt aus Bauteilen – zerlegbar |
 | „Was ist ein Schwarzes Loch?“ | Wikipedia-Zusammenfassung, das Bild wird als Hologramm projiziert |
 | „Wetter in Berlin“ | Aktuelles Wetter (Open-Meteo) |
 | „Zurück“ | Zurück zum KI-Kern |
