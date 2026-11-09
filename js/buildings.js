@@ -92,7 +92,7 @@ const FS = `
     float floors = 0.8 + 0.2 * step(0.5, fract(vL.y / 3.2));
     float top = smoothstep(0.85, 1.0, vL.y / max(vH, 1.0));
     float edge = 1.0 - smoothstep(uRadius * 0.75, uRadius, d);
-    float a = (0.06 + f * 0.5) * floors + top * 0.12 + ring * 0.5;
+    float a = (0.14 + f * 0.7) * floors + top * 0.22 + ring * 0.55;
     vec3 col = mix(uColor, vec3(0.75, 0.95, 1.0), clamp(vH / 120.0, 0.0, 1.0));
     gl_FragColor = vec4(col, a * uFade * edge);
   }`;
@@ -100,7 +100,7 @@ const LFS = `
   uniform float uTime, uFade, uRadius; varying vec3 vL;
   void main(){ float d = length(vL.xz); float edge = 1.0 - smoothstep(uRadius * 0.75, uRadius, d);
     float ring = smoothstep(25.0, 0.0, abs(d - mod(uTime * 260.0, uRadius * 1.4)));
-    gl_FragColor = vec4(vec3(0.55, 0.92, 1.0), (0.38 + ring * 0.6) * uFade * edge); }`;
+    gl_FragColor = vec4(vec3(0.6, 0.94, 1.0), (0.5 + ring * 0.6) * uFade * edge); }`;
 const LVS = `uniform float uGrow; varying vec3 vL; void main(){ vec3 p = position; p.y *= uGrow; vL = p; gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0); }`;
 
 export class Buildings {
@@ -117,7 +117,7 @@ export class Buildings {
 
   /** pro Frame: entscheiden, ob neue Gebäude geladen werden müssen */
   want(lat, lon, alt, moving) {
-    if (alt > 0.0045 || moving) { this.wanted = null; return; }
+    if (alt > 0.007 || moving) { this.wanted = null; return; }
     const r = clamp(alt * EARTH * 0.55, 350, 1100);
     if (this.area) {
       const dx = (lon - this.area.lon) * Math.cos(lat * DEG) * 111320, dy = (lat - this.area.lat) * 110540;
@@ -229,7 +229,7 @@ export class Buildings {
     if (!this.group) return;
     const grow = clamp((performance.now() - this.born) / 1800, 0, 1);
     this.uniforms.uGrow.value = 1 - Math.pow(1 - grow, 3);
-    this.uniforms.uFade.value = fade * smooth(0.009, 0.004, alt);
+    this.uniforms.uFade.value = fade * smooth(0.013, 0.006, alt);
     this.group.visible = this.uniforms.uFade.value > 0.01;
   }
 }

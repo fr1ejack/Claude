@@ -224,7 +224,7 @@ export class Globe {
     g.position.copy(n);
     g.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), n);
     const col = kind === 'me' ? 0xffb547 : 0x7fe9ff;
-    const bm = new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false });
+    const bm = new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false });
     const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.03, 1, 8, 1, true), bm);
     beam.position.y = 0.5; g.add(beam);
     const ringM = new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
@@ -305,8 +305,9 @@ export class Globe {
       fragmentShader: `uniform sampler2D uMap; uniform float uOp, uTime; varying vec2 vUv;
         void main(){ vec3 c=texture2D(uMap,vUv).rgb; float l=dot(c,vec3(0.3,0.59,0.11));
           vec2 d=abs(vUv-0.5)*2.0; float edge=1.0-smoothstep(0.55,1.0,max(d.x,d.y));
-          float scan=0.85+0.15*sin(vUv.y*900.0-uTime*4.0);
-          vec3 col=vec3(0.16,0.66,1.0)*min(pow(l,1.35)*1.9,1.0)*0.85*scan + vec3(0.0,0.015,0.035);
+          float scan=0.9+0.1*sin(vUv.y*900.0-uTime*4.0);
+          float g=clamp((l-0.13)*1.7,0.0,1.0); g=pow(g,1.15);
+          vec3 col=mix(vec3(0.01,0.07,0.14), vec3(0.34,0.66,0.88), g)*scan;
           gl_FragColor=vec4(col, uOp*edge); }`,
       transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2,
     });
