@@ -216,6 +216,7 @@ app.setFlights = async (on, show = false) => {
   app.flightsOn = on;
   flights.visible = on;
   document.getElementById('tglFlights').classList.toggle('on', on);
+  document.getElementById('flLegend').hidden = !on;
   if (!on) { flights.select(null); app.follow = null; return; }
   if (show && app.mode !== 'globe') await app.showGlobe();
   app.lastFetch = 0;
@@ -402,7 +403,7 @@ function frame(now) {
   if (globe.group.visible) {
     globe.update(dt, { camera, alt: app.gcam.alt, fade: globe.fade.value, heightPx: innerHeight * renderer.getPixelRatio() });
     if (app.mode === 'globe' && (!app.camTween || app.camTween.done)) globe.requestPatch(app.gcam.lat, app.gcam.lon, app.gcam.alt, camera.aspect);
-    flights.update(app.gcam.alt, globe.fade.value);
+    flights.update(app.gcam.alt, globe.fade.value, camera);
     if (!IS_ARTIFACT) {
       buildings.want(app.gcam.lat, app.gcam.lon, app.gcam.alt, !!(app.camTween && !app.camTween.done) || !!drag?.moved);
       buildings.update(app.gcam.alt, globe.fade.value);
@@ -450,12 +451,51 @@ document.getElementById('tglWake').addEventListener('click', e => {
   if (on) ui.log('ai', 'Weckwort aktiv – sagen Sie „Jarvis, …“ gefolgt von Ihrer Frage.');
 });
 document.getElementById('btnHome').addEventListener('click', () => assistant.handle('zurück'));
-document.getElementById('tglConvo').addEventListener('click', e => {
-  if (!assistant.SR) return assistant.say('Spracherkennung wird von diesem Browser nicht unterstützt. Bitte Chrome oder Edge verwenden.');
-  assistant.convo = !assistant.convo;
-  e.currentTarget.classList.toggle('on', assistant.convo);
-  if (assistant.convo) { assistant.say('Gesprächsmodus aktiv. Ich höre nach jeder Antwort automatisch wieder zu.'); }
-});
+/* ---------- Anruf-Bildschirm (freihändiges Gespräch) ---------- */
+const callEl = document.getElementById('call');
+const callText = document.getElementById('callText');
+let callT0 = 0, callTimer = null;
+const stateMap = s => /SPRICHT/.test(s) ? 'speak' : /HÖRT/.test(s) ? 'listen' : /(VERARBEITE|DENKT|RECHERCHIERT|KONSTRUIERE|LADE)/.test(s) ? 'think' : 'idle';
+const stateWord = { speak: 'JARVIS SPRICHT', listen: 'ICH HÖRE …', think: 'EINEN MOMENT …', idle: 'ANRUF LÄUFT' };
+new MutationObserver(() => {
+  if (callEl.hidden) return;
+  const st = stateMap(document.getElementById('sysState').textContent);
+  callEl.dataset.state = st;
+  document.getElementById('callState').textContent = stateWord[st];
+}).observe(document.getElementById('sysState'), { childList: true, characterData: true, subtree: true });
+new MutationObserver(m => {
+  if (callEl.hidden) return;
+  const last = document.getElementById('log').lastElementChild;
+  if (!last) return;
+  const txt = last.textContent.replace(/^(SIE|J\.A\.R\.V\.I\.S\.)/, '').trim();
+  callText.innerHTML = last.classList.contains('user') ? `<span class="you">„${esc2(txt)}“</span>` : esc2(txt);
+}).observe(document.getElementById('log'), { childList: true, subtree: true, characterData: true });
+function esc2(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+function startCall() {
+  if (!assistant.SR) return assistant.say('Für einen Anruf brauche ich die Spracherkennung. Bitte Chrome, Edge oder Safari verwenden – oder tippen Sie einfach.');
+  assistant.convo = true;
+  document.getElementById('tglConvo').classList.add('on');
+  callEl.hidden = false; callEl.dataset.state = 'idle';
+  callText.textContent = '';
+  callT0 = Date.now();
+  clearInterval(callTimer);
+  callTimer = setInterval(() => {
+    const s = Math.floor((Date.now() - callT0) / 1000);
+    document.getElementById('callTimer').textContent = `${String(s / 60 | 0).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+  }, 1000);
+  const h = new Date().getHours();
+  assistant.say(`${h < 11 ? 'Guten Morgen' : h < 18 ? 'Guten Tag' : 'Guten Abend'}. Ich höre.`);
+}
+function endCall() {
+  assistant.convo = false;
+  assistant.interrupt(true);
+  document.getElementById('tglConvo').classList.remove('on');
+  callEl.hidden = true;
+  clearInterval(callTimer);
+}
+document.getElementById('tglConvo').addEventListener('click', () => (callEl.hidden ? startCall() : endCall()));
+document.getElementById('callEnd').addEventListener('click', endCall);
+document.getElementById('callOrb').addEventListener('click', () => assistant.interrupt()); // Jarvis unterbrechen und sprechen
 
 /* ---------- KI-Kern (lokales Sprachmodell) ---------- */
 const brainLabel = { off: 'AUS', loading: 'LÄDT', ready: 'BEREIT', error: 'FEHLER' };
