@@ -484,7 +484,7 @@ function startCall() {
     document.getElementById('callTimer').textContent = `${String(s / 60 | 0).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
   }, 1000);
   const h = new Date().getHours();
-  assistant.say(`${h < 11 ? 'Guten Morgen' : h < 18 ? 'Guten Tag' : 'Guten Abend'}. Ich höre.`);
+  assistant.say(`${h < 11 ? 'Guten Morgen' : h < 18 ? 'Guten Tag' : 'Guten Abend'}${userName() ? ', ' + userName() : ''}. Ich höre.`);
 }
 function endCall() {
   assistant.convo = false;
@@ -620,12 +620,16 @@ requestAnimationFrame(frame);
   bootBtn.disabled = false;
   bootBtn.textContent = 'SYSTEM STARTEN';
 })();
+function userName() { try { return (localStorage.getItem('jarvis.name') || '').trim(); } catch { return ''; } }
 bootBtn.addEventListener('click', async () => {
   document.getElementById('boot').classList.add('gone');
   ui.setState('ONLINE');
   const h = new Date().getHours();
   const g = h < 5 ? 'Guten Abend' : h < 11 ? 'Guten Morgen' : h < 18 ? 'Guten Tag' : 'Guten Abend';
-  assistant.say(`${g}. Alle Systeme sind online. Wie kann ich helfen?`);
+  const nm = userName();
+  // Namen einmalig ins Gedächtnis legen, damit Jarvis dich im Gespräch anspricht
+  if (nm) { try { if (localStorage.getItem('jarvis.nameFact') !== nm) { memory.addFact('Ich heiße ' + nm + ' (so sollst du mich ansprechen)'); localStorage.setItem('jarvis.nameFact', nm); } } catch { /* */ } }
+  assistant.say(`${g}${nm ? ', ' + nm : ''}. Alle Systeme sind online. Wie kann ich helfen?`);
   if (IS_ARTIFACT) {
     let home = null; try { home = JSON.parse(localStorage.getItem('jarvis.home') || 'null'); } catch { /* */ }
     if (home) { app.userLoc = home; ui.setLocation(home.city + (home.region ? ', ' + home.region : ''), fmtCoord(home.lat, home.lon)); }
