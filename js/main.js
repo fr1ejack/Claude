@@ -216,6 +216,7 @@ app.setFlights = async (on, show = false) => {
   app.flightsOn = on;
   flights.visible = on;
   document.getElementById('tglFlights').classList.toggle('on', on);
+  document.getElementById('flLegend').hidden = !on;
   if (!on) { flights.select(null); app.follow = null; return; }
   if (show && app.mode !== 'globe') await app.showGlobe();
   app.lastFetch = 0;
@@ -402,7 +403,7 @@ function frame(now) {
   if (globe.group.visible) {
     globe.update(dt, { camera, alt: app.gcam.alt, fade: globe.fade.value, heightPx: innerHeight * renderer.getPixelRatio() });
     if (app.mode === 'globe' && (!app.camTween || app.camTween.done)) globe.requestPatch(app.gcam.lat, app.gcam.lon, app.gcam.alt, camera.aspect);
-    flights.update(app.gcam.alt, globe.fade.value);
+    flights.update(app.gcam.alt, globe.fade.value, camera);
     if (!IS_ARTIFACT) {
       buildings.want(app.gcam.lat, app.gcam.lon, app.gcam.alt, !!(app.camTween && !app.camTween.done) || !!drag?.moved);
       buildings.update(app.gcam.alt, globe.fade.value);
@@ -450,12 +451,51 @@ document.getElementById('tglWake').addEventListener('click', e => {
   if (on) ui.log('ai', 'Weckwort aktiv – sagen Sie „Jarvis, …“ gefolgt von Ihrer Frage.');
 });
 document.getElementById('btnHome').addEventListener('click', () => assistant.handle('zurück'));
-document.getElementById('tglConvo').addEventListener('click', e => {
-  if (!assistant.SR) return assistant.say('Spracherkennung wird von diesem Browser nicht unterstützt. Bitte Chrome oder Edge verwenden.');
-  assistant.convo = !assistant.convo;
-  e.currentTarget.classList.toggle('on', assistant.convo);
-  if (assistant.convo) { assistant.say('Gesprächsmodus aktiv. Ich höre nach jeder Antwort automatisch wieder zu.'); }
-});
+/* ---------- Anruf-Bildschirm (freihändiges Gespräch) ---------- */
+const callEl = document.getElementById('call');
+const callText = document.getElementById('callText');
+let callT0 = 0, callTimer = null;
+const stateMap = s => /SPRICHT/.test(s) ? 'speak' : /HÖRT/.test(s) ? 'listen' : /(VERARBEITE|DENKT|RECHERCHIERT|KONSTRUIERE|LADE)/.test(s) ? 'think' : 'idle';
+const stateWord = { speak: 'JARVIS SPRICHT', listen: 'ICH HÖRE …', think: 'EINEN MOMENT …', idle: 'ANRUF LÄUFT' };
+new MutationObserver(() => {
+  if (callEl.hidden) return;
+  const st = stateMap(document.getElementById('sysState').textContent);
+  callEl.dataset.state = st;
+  document.getElementById('callState').textContent = stateWord[st];
+}).observe(document.getElementById('sysState'), { childList: true, characterData: true, subtree: true });
+new MutationObserver(m => {
+  if (callEl.hidden) return;
+  const last = document.getElementById('log').lastElementChild;
+  if (!last) return;
+  const txt = last.textContent.replace(/^(SIE|J\.A\.R\.V\.I\.S\.)/, '').trim();
+  callText.innerHTML = last.classList.contains('user') ? `<span class="you">„${esc2(txt)}“</span>` : esc2(txt);
+}).observe(document.getElementById('log'), { childList: true, subtree: true, characterData: true });
+function esc2(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+function startCall() {
+  if (!assistant.SR) return assistant.say('Für einen Anruf brauche ich die Spracherkennung. Bitte Chrome, Edge oder Safari verwenden – oder tippen Sie einfach.');
+  assistant.convo = true;
+  document.getElementById('tglConvo').classList.add('on');
+  callEl.hidden = false; callEl.dataset.state = 'idle';
+  callText.textContent = '';
+  callT0 = Date.now();
+  clearInterval(callTimer);
+  callTimer = setInterval(() => {
+    const s = Math.floor((Date.now() - callT0) / 1000);
+    document.getElementById('callTimer').textContent = `${String(s / 60 | 0).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+  }, 1000);
+  const h = new Date().getHours();
+  assistant.say(`${h < 11 ? 'Guten Morgen' : h < 18 ? 'Guten Tag' : 'Guten Abend'}. Ich höre.`);
+}
+function endCall() {
+  assistant.convo = false;
+  assistant.interrupt(true);
+  document.getElementById('tglConvo').classList.remove('on');
+  callEl.hidden = true;
+  clearInterval(callTimer);
+}
+document.getElementById('tglConvo').addEventListener('click', () => (callEl.hidden ? startCall() : endCall()));
+document.getElementById('callEnd').addEventListener('click', endCall);
+document.getElementById('callOrb').addEventListener('click', () => assistant.interrupt()); // Jarvis unterbrechen und sprechen
 
 /* ---------- KI-Kern (lokales Sprachmodell) ---------- */
 const brainLabel = { off: 'AUS', loading: 'LÄDT', ready: 'BEREIT', error: 'FEHLER' };
@@ -538,14 +578,29 @@ document.getElementById('btnShare').addEventListener('click', async () => {
   } catch (e) { if (e?.name !== 'AbortError') ui.log('ai', 'Link zum Weitergeben: ' + url); }
 });
 
-/* ---------- Installierbare App (PWA) ---------- */
+/* ---------- Installierbare App (PWA): auf Handy & PC herunterladbar ---------- */
 let installEvt = null;
-addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; document.getElementById('btnInstall').hidden = false; });
-document.getElementById('btnInstall').addEventListener('click', async () => {
-  if (!installEvt) return;
-  installEvt.prompt();
-  await installEvt.userChoice;
-  installEvt = null; document.getElementById('btnInstall').hidden = true;
+const btnInstall = document.getElementById('btnInstall');
+const isStandalone = matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches || navigator.standalone;
+if (!IS_ARTIFACT && !isStandalone) btnInstall.hidden = false; // immer sichtbar, Anleitung kommt beim Tippen
+addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; btnInstall.hidden = false; });
+addEventListener('appinstalled', () => { btnInstall.hidden = true; ui.log('ai', 'App installiert. Sie finden Jarvis jetzt auf Ihrem Startbildschirm.'); });
+btnInstall.addEventListener('click', async () => {
+  if (installEvt) { // Android / Chrome / Edge: echter Installieren-Dialog
+    installEvt.prompt();
+    const r = await installEvt.userChoice;
+    installEvt = null;
+    if (r.outcome === 'accepted') btnInstall.hidden = true;
+    return;
+  }
+  // Sonst (vor allem iPhone/iPad): Anleitung einblenden, da es dort keinen Auto-Dialog gibt
+  const ua = navigator.userAgent, ios = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  const steps = ios
+    ? '<h2>Auf dem iPhone/iPad installieren</h2><ol><li>Tippen Sie unten in der Leiste auf das <b>Teilen-Symbol</b> (Viereck mit Pfeil nach oben).</li><li>Wählen Sie <b>„Zum Home-Bildschirm“</b>.</li><li>Oben rechts auf <b>„Hinzufügen“</b>.</li></ol><p class="hint">Geht nur in <b>Safari</b>. In Chrome oder im In-App-Browser (z. B. aus Instagram) zuerst in Safari öffnen.</p>'
+    : /Android/.test(ua)
+    ? '<h2>Auf Android installieren</h2><ol><li>Tippen Sie oben rechts im Browser auf das <b>Menü</b> (drei Punkte).</li><li>Wählen Sie <b>„App installieren“</b> bzw. <b>„Zum Startbildschirm hinzufügen“</b>.</li></ol><p class="hint">Am besten in Chrome.</p>'
+    : '<h2>Auf dem PC installieren</h2><ol><li>Klicken Sie in der Adressleiste rechts auf das <b>Installieren-Symbol</b> (Bildschirm mit Pfeil nach unten).</li><li>Oder Menü (drei Punkte) → <b>„App installieren“</b> / <b>„Diese Seite als App installieren“</b>.</li></ol><p class="hint">Funktioniert in Chrome und Edge.</p>';
+  ui.showPanel('APP HERUNTERLADEN', steps + '<p class="hint" style="margin-top:10px">Danach startet Jarvis im Vollbild, mit eigenem Symbol – wie eine normale App.</p>');
 });
 
 ui.chips(IS_ARTIFACT ? ['Ich bin in Dortmund', 'Wo ist Tokio?', 'Zeig mir einen PS5-Controller', 'Öffne ihn', 'Zeig mir eine Drohne', 'Erzähl mir einen Witz', 'Wie funktioniert ein Schwarzes Loch?', 'Merke dir, dass ich Fußball mag'] : ['Wo bin ich?', 'Wo ist Dortmund?', 'Zeig mir den Signal Iduna Park', 'Flüge über Frankfurt', 'Suche Flug LH400', 'Zeig mir einen PS5-Controller', 'Öffne ihn', 'Wie hoch ist der Eiffelturm?'], t => assistant.handle(t));

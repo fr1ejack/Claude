@@ -23,6 +23,58 @@ function heightOf(t) {
   return { h: Math.max(2, Math.min(h, 900)), min: Math.max(0, min) };
 }
 
+/** Dachform & -höhe aus OSM-Tags; macht die Gebäude naturgetreuer als reine Quader */
+function roofOf(t, h, min) {
+  const num = v => { const m = String(v ?? '').replace(',', '.').match(/[\d.]+/); return m ? parseFloat(m[0]) : NaN; };
+  let shape = String(t['roof:shape'] || '').toLowerCase().replace(/\s+/g, '');
+  const b = t.building || t['building:part'] || '';
+  if (!shape) { // sinnvolle Standard-Dachform je Gebäudeart
+    if (/^(house|detached|semidetached_house|bungalow|cabin|hut|farm|cottage)$/.test(b)) shape = 'gabled';
+    else if (/^(church|chapel|cathedral)$/.test(b)) shape = 'gabled';
+    else shape = 'flat';
+  }
+  if (shape === 'flat') return { shape, roofH: 0 };
+  let roofH = num(t['roof:height']);
+  if (isNaN(roofH)) { const rl = num(t['roof:levels']); roofH = isNaN(rl) ? 0 : rl * 2.6; }
+  if (!roofH) roofH = /pyramid|dome|cone|onion|spher|round/.test(shape) ? Math.min(14, (h - min) * 0.5) : /gabl|hip|gambrel|mansard|half/.test(shape) ? 3.5 : 2.5;
+  roofH = Math.min(roofH, Math.max(0, (h - min) - 2)); // Wand bleibt mind. 2 m
+  if (roofH < 0.8) return { shape: 'flat', roofH: 0 };
+  return { shape, roofH };
+}
+
+/** Dachgeometrie in Endkoordinaten (x=Ost, y=oben, z=-Nord) */
+function roofGeom(ptsXZ, wallTop, roofH, shape) {
+  const P = ptsXZ.map(p => new THREE.Vector3(p.x, wallTop, -p.y));
+  if (P.length > 1 && P[0].distanceTo(P[P.length - 1]) < 1e-6) P.pop();
+  const n = P.length;
+  if (n < 3) return null;
+  const cx = P.reduce((s, v) => s + v.x, 0) / n, cz = P.reduce((s, v) => s + v.z, 0) / n;
+  const verts = [];
+  const tri = (a, b, c) => verts.push(a.x, a.y, a.z, b.x, b.y, b.z, c.x, c.y, c.z);
+  const apex = /pyramid|dome|cone|onion|spher|round/.test(shape);
+  if (apex) {
+    const top = new THREE.Vector3(cx, wallTop + roofH, cz);
+    for (let i = 0; i < n; i++) tri(P[i], P[(i + 1) % n], top);
+  } else {
+    // Firstlinie entlang der längeren Seite der Bounding-Box (Sattel-/Walmdach-Näherung)
+    let minx = Infinity, maxx = -Infinity, minz = Infinity, maxz = -Infinity;
+    for (const v of P) { minx = Math.min(minx, v.x); maxx = Math.max(maxx, v.x); minz = Math.min(minz, v.z); maxz = Math.max(maxz, v.z); }
+    const w = maxx - minx, d = maxz - minz, y = wallTop + roofH, hip = /hip|pyramid/.test(shape) ? 0.5 : 0.18;
+    let r0, r1;
+    if (w >= d) { const ix = w * hip; r0 = new THREE.Vector3(minx + ix, y, (minz + maxz) / 2); r1 = new THREE.Vector3(maxx - ix, y, (minz + maxz) / 2); }
+    else { const iz = d * hip; r0 = new THREE.Vector3((minx + maxx) / 2, y, minz + iz); r1 = new THREE.Vector3((minx + maxx) / 2, y, maxz - iz); }
+    const near = v => (v.distanceTo(r0) <= v.distanceTo(r1) ? r0 : r1);
+    for (let i = 0; i < n; i++) {
+      const a = P[i], b = P[(i + 1) % n], ra = near(a), rb = near(b);
+      if (ra === rb) tri(a, b, ra); else { tri(a, b, rb); tri(a, rb, ra); }
+    }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+  g.computeVertexNormals();
+  return g;
+}
+
 const VS = `
   uniform float uGrow; attribute float aH;
   varying vec3 vL; varying vec3 vN; varying vec3 vW; varying float vH;
@@ -107,19 +159,26 @@ export class Buildings {
     let count = 0;
     const addRing = (pts, tags, holes = []) => {
       if (pts.length < 4) return;
-      const shape = new THREE.Shape(pts.map(toXZ));
+      const xz = pts.map(toXZ);
+      const shape = new THREE.Shape(xz);
       for (const h of holes) if (h.length >= 4) shape.holes.push(new THREE.Path(h.map(toXZ)));
       const { h, min } = heightOf(tags);
       if (h - min < 1) return;
+      const roof = roofOf(tags, h, min);
+      const wallTop = h - roof.roofH;      // Dach sitzt oben auf der Wand
       let g;
-      try { g = new THREE.ExtrudeGeometry(shape, { depth: h - min, bevelEnabled: false, curveSegments: 1 }); } catch { return; }
+      try { g = new THREE.ExtrudeGeometry(shape, { depth: wallTop - min, bevelEnabled: false, curveSegments: 1 }); } catch { return; }
       g.rotateX(-Math.PI / 2);      // Shape-y (Norden) -> -z, Extrusion -> +y
       g.translate(0, min, 0);
       g.deleteAttribute('uv');
-      const n = g.attributes.position.count;
-      g.setAttribute('aH', new THREE.Float32BufferAttribute(new Float32Array(n).fill(h), 1));
+      const setH = geom => geom.setAttribute('aH', new THREE.Float32BufferAttribute(new Float32Array(geom.attributes.position.count).fill(h), 1));
+      setH(g);
       geoms.push(g);
       lines.push(new THREE.EdgesGeometry(g, 35));
+      if (roof.roofH > 0 && !holes.length) {
+        const rg = roofGeom(xz, wallTop, roof.roofH, roof.shape);
+        if (rg) { setH(rg); geoms.push(rg); lines.push(new THREE.EdgesGeometry(rg, 25)); }
+      }
       count++;
     };
     for (const e of elems) {

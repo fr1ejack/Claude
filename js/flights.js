@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
-import { U, DEG, ll2v, northAt, destPoint, clamp, smooth } from './util.js';
+import { U, DEG, ll2v, northAt, destPoint, clamp, smooth, esc } from './util.js';
+
+const fmtK = n => Math.round(n).toLocaleString('de-DE');
 
 const MAX = 15000;
 const _m = new THREE.Matrix4(), _p = new THREE.Vector3(), _n = new THREE.Vector3(), _N = new THREE.Vector3(), _E = new THREE.Vector3();
@@ -34,6 +36,16 @@ export class FlightLayer {
     this.route = new THREE.Group();
     parent.add(this.route);
     this.routeLabels = [];
+    // Beschriftungs-Pool: nur wenige Flugzeuge bekommen ein Schild, damit es übersichtlich bleibt
+    this.labelPool = [];
+    for (let k = 0; k < 14; k++) {
+      const div = document.createElement('div');
+      div.className = 'fl-tag';
+      const o = new CSS2DObject(div);
+      o.visible = false;
+      parent.add(o);
+      this.labelPool.push(o);
+    }
   }
 
   set(list, { replace = true } = {}) {
@@ -58,14 +70,15 @@ export class FlightLayer {
   }
   radius(p) { return 1.00001 + p.altFt * 0.3048 / 6371000 * 1.6; }
 
-  update(alt, fade) {
+  update(alt, fade, camera) {
     this.mesh.visible = this.visible && fade > 0.02;
     this.route.visible = this.mesh.visible;
     for (const l of this.routeLabels) l.visible = this.route.visible && fade > 0.6;
-    if (!this.mesh.visible) return;
+    if (!this.mesh.visible) { for (const o of this.labelPool) o.visible = false; return; }
     this.mesh.material.opacity = 0.95 * fade;
     const s = clamp(alt * 0.018, 0.000006, 0.022);
     const t = Date.now();
+    const pulse = 1 + Math.sin(t / 180) * 0.25;
     let i = 0;
     for (const p of this.list) {
       if (i >= MAX) break;
@@ -78,7 +91,7 @@ export class FlightLayer {
       _F.copy(_N).multiplyScalar(Math.cos(h)).addScaledVector(_E, Math.sin(h));
       _R.copy(_E).multiplyScalar(Math.cos(h)).addScaledVector(_N, -Math.sin(h));
       const sel = this.selected && this.selected.hex === p.hex;
-      const k = s * (sel ? 1.8 : 1);
+      const k = s * (sel ? 2.1 * pulse : 1);
       _m.makeBasis(_R, _F, _n).scale(_S.set(k, k, k)).setPosition(_p);
       this.mesh.setMatrixAt(i, _m);
       if (sel) _c.copy(SEL); else _c.copy(LOW).lerp(HIGH, clamp(p.altFt / 40000, 0, 1));
@@ -88,6 +101,43 @@ export class FlightLayer {
     this.mesh.count = i;
     this.mesh.instanceMatrix.needsUpdate = true;
     if (this.mesh.instanceColor) this.mesh.instanceColor.needsUpdate = true;
+    this.updateLabels(alt, fade, camera);
+  }
+
+  /** Beschriftet nur die zur Bildschirmmitte nächsten (und das ausgewählte) Flugzeug */
+  updateLabels(alt, fade, camera) {
+    const show = camera && fade > 0.6 && alt < 1.4 && this.list.length <= 1500;
+    for (const o of this.labelPool) o.visible = false;
+    if (!show) return;
+    this.parent.updateMatrixWorld();
+    const cx = this.parent.position, wp = _p, wn = _n, cd = _N;
+    const cand = [];
+    for (const p of this.list) {
+      if (p._lat == null) continue;
+      ll2v(p._lat, p._lon, this.radius(p), wp).applyMatrix4(this.parent.matrixWorld);
+      wn.copy(wp).sub(cx).normalize();
+      cd.copy(camera.position).sub(wp).normalize();
+      if (wn.dot(cd) < 0.1) continue;            // Rückseite des Globus
+      const v = wp.clone().project(camera);
+      if (v.z > 1 || Math.abs(v.x) > 1 || Math.abs(v.y) > 1) continue;
+      const d2 = v.x * v.x + v.y * v.y;
+      const sel = this.selected && this.selected.hex === p.hex;
+      cand.push({ p, d2: sel ? -1 : d2, sx: (v.x + 1) / 2, sy: (1 - v.y) / 2 });
+    }
+    cand.sort((a, b) => a.d2 - b.d2);
+    let k = 0;
+    const used = [];
+    for (const c of cand) {
+      if (k >= this.labelPool.length) break;
+      if (used.some(u => Math.abs(u.sx - c.sx) < 0.11 && Math.abs(u.sy - c.sy) < 0.05)) continue; // Überlappung vermeiden
+      used.push(c);
+      const o = this.labelPool[k++];
+      const p = c.p, sel = this.selected && this.selected.hex === p.hex;
+      o.element.className = 'fl-tag' + (sel ? ' sel' : '');
+      o.element.innerHTML = `<b>${esc(p.cs || p.reg || p.hex.toUpperCase())}</b><span>${fmtK(p.altFt)} ft</span>`;
+      o.position.copy(ll2v(p._lat, p._lon, this.radius(p)));
+      o.visible = true;
+    }
   }
 
   /** Nächstes Flugzeug zu Bildschirmkoordinate */

@@ -134,6 +134,14 @@ export class Assistant {
     this.rec.continuous = true;
     try { this.rec.start(); } catch { /* läuft schon */ }
   }
+  /** Jarvis sofort stummschalten; ohne stop danach gleich wieder zuhören (für den Anruf) */
+  interrupt(stop = false) {
+    try { speechSynthesis?.cancel(); } catch { /* */ }
+    this.speaking = false;
+    clearTimeout(this.silence);
+    if (stop) { try { this.rec?.stop(); } catch { /* */ } ui.setState('ONLINE'); return; }
+    if (this.rec && !this.listening) setTimeout(() => this.listenOnce(), 150);
+  }
   setWake(on) {
     if (!this.rec) { this.say('Spracherkennung wird von diesem Browser nicht unterstützt.'); return false; }
     this.wake = on;

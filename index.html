@@ -122,12 +122,34 @@
       <button type="button" id="tglVoice" class="tgl on">🔊 STIMME</button>
       <button type="button" id="tglWake" class="tgl">◉ „JARVIS“-WECKWORT</button>
       <button type="button" id="btnBrain" class="tgl">🧠 KI-KERN</button>
-      <button type="button" id="tglConvo" class="tgl">💬 GESPRÄCH</button>
+      <button type="button" id="tglConvo" class="tgl">📞 ANRUFEN</button>
       <button type="button" id="btnHome" class="tgl">⟲ KERN</button>
       <button type="button" id="btnShare" class="tgl">↗ TEILEN</button>
       <button type="button" id="btnInstall" class="tgl" hidden>⤓ APP INSTALLIEREN</button>
     </div>
   </footer>
+
+  <!-- Anruf-Bildschirm: freihändiges Gespräch mit Jarvis -->
+  <div id="call" hidden>
+    <div class="call-top">
+      <span id="callState">ANRUF LÄUFT</span>
+      <span id="callTimer">00:00</span>
+    </div>
+    <button type="button" id="callOrb" title="Antippen, um Jarvis zu unterbrechen und zu sprechen">
+      <span class="ring r1"></span><span class="ring r2"></span><span class="ring r3"></span>
+      <span class="core"></span>
+      <span class="eq"><i></i><i></i><i></i><i></i><i></i></span>
+    </button>
+    <div id="callText">Verbinde …</div>
+    <p class="call-hint">Sprechen Sie einfach los. Zum Unterbrechen die Kugel antippen.</p>
+    <button type="button" id="callEnd">AUFLEGEN</button>
+  </div>
+
+  <div id="flLegend" hidden>
+    <span class="t">FLUGHÖHE</span>
+    <i class="bar"></i>
+    <span class="lo">0</span><span class="hi">12&thinsp;km</span>
+  </div>
 
   <div id="attrib">Karte © Esri, Maxar, Earthstar Geographics · © OpenStreetMap-Mitwirkende · Flugdaten adsb.lol / OpenSky Network · Geodaten Natural Earth · Wikipedia · Open-Meteo</div>
 
