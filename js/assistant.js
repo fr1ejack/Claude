@@ -1,6 +1,19 @@
 import * as S from './services.js';
 import * as ui from './ui.js';
-import { findObject, buildFromSpec, HOLO_PROMPT } from './objects.js';
+import { findObject as findProcedural, buildFromSpec, HOLO_PROMPT } from './objects.js';
+import { findModel, buildModel } from './library.js';
+
+// Adjektive, die vor einem Katalog-Namen stehen dürfen („ein rotes Auto“)
+const ADJ = /^(rot|rote|roter|rotes|roten|blau\w*|grün\w*|gelb\w*|schwarz\w*|weiß\w*|weiss\w*|groß\w*|gross\w*|klein\w*|schnell\w*|alt\w*|schön\w*|echt\w*|cool\w*|richtig\w*|wild\w*|süß\w*|niedlich\w*|3d|holografisch\w*)$/;
+/** Sucht zuerst die zerlegbaren Eigenbau-Modelle, dann die echten 3D-Modelle des Katalogs */
+function findObject(text) {
+  const p = findProcedural(text);
+  if (p) return p;
+  const words = String(text).toLowerCase().split(/\s+/).filter(w => w && !ADJ.test(w) && !/^(ein|eine|einen|der|die|das|den|mir|mal|bitte)$/.test(w));
+  if (words.length !== 1) return null;            // „Mausefallen Auto“ ist kein Auto aus dem Katalog
+  const m = findModel(words[0]);
+  return m ? { key: 'model:' + m.key, build: () => buildModel(m), model: m } : null;
+}
 import { fmt, fmtCoord, haversine, compass, esc, IS_ARTIFACT } from './util.js';
 import { memory, keywords } from './memory.js';
 
@@ -152,7 +165,7 @@ export class Assistant {
     if (/^(hallo|hi|hey|guten (morgen|tag|abend)|servus|moin|grüss gott|gruess gott)\b/.test(tf) && tf.split(' ').length <= 4)
       return this.say(`${greeting()}. Was kann ich für Sie tun?`);
     if (/(wer bist du|was kannst du|hilfe|was geht|funktionen)/.test(tf))
-      return this.say('Ich bin J.A.R.V.I.S. Mit aktiviertem KI-Kern beantworte ich jede Frage, recherchiere dafür selbst im Internet und merke mir, was ich lerne. Außerdem kann ich Ihren Standort bestimmen, jeden Ort der Welt auf dem Holo-Globus zeigen, Flugzeuge in Echtzeit verfolgen und suchen, das Wetter abrufen, Wissen nachschlagen und Objekte als Hologramm darstellen – zum Beispiel einen Game-Controller, den ich auch für Sie öffnen kann.');
+      return this.say('Ich bin J.A.R.V.I.S. Mit aktiviertem KI-Kern beantworte ich jede Frage, recherchiere dafür selbst im Internet und merke mir, was ich lerne. Ich zeige jedes Tier und jeden Gegenstand als Hologramm und kann es öffnen. Außerdem kann ich Ihren Standort bestimmen, jeden Ort der Welt auf dem Holo-Globus zeigen, Flugzeuge in Echtzeit verfolgen und suchen, das Wetter abrufen, Wissen nachschlagen und Objekte als Hologramm darstellen – zum Beispiel einen Game-Controller, den ich auch für Sie öffnen kann.');
     if (/(wie spät|wieviel uhr|wie viel uhr|uhrzeit)/.test(tf))
       return this.say(`Es ist ${new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} Uhr.`);
     if (/(welcher tag|welches datum|datum heute|den wievielten)/.test(tf))
@@ -179,9 +192,14 @@ export class Assistant {
     const lib = findObject(tf);
     if (/(öffne|oeffne|aufmachen|mach .*auf|zerleg|auseinander|explosions|innenleben|was ist (da )?drin|von innen|innere)/.test(tf) && !/(karte|globus|erde)/.test(tf)) {
       if (lib && (!app.obj || app.obj.key !== lib.key)) await app.showObject(lib);
-      if (!app.obj || !app.obj.parts.length) return this.say('Es ist gerade kein Objekt geladen, das ich öffnen könnte. Sagen Sie zum Beispiel: Zeig mir einen PS5-Controller.');
+      if (!app.obj) return this.say('Es ist gerade kein Objekt geladen, das ich öffnen könnte. Sagen Sie zum Beispiel: Zeig mir einen PS5-Controller.');
+      if (!app.obj.parts.length) {
+        // Tiere und einteilige Modelle: das Innere konstruiert die KI als zerlegbares Hologramm
+        const t = app.obj.title, tier = app.obj.kind === 'tier';
+        return this.holoGen(tier ? `${t} – Anatomie mit Skelett und inneren Organen` : `${t} – Innenleben mit allen Bauteilen`, { explode: true, label: tier ? `das Innere von ${t}` : `das Innenleben von ${t}` });
+      }
       app.explode(true);
-      return this.say(`Öffne ${app.obj.title}. Ich zerlege es in ${app.obj.parts.length} Komponenten: ${app.obj.parts.slice(0, 6).map(p => p.name).join(', ')}${app.obj.parts.length > 6 ? ' und weitere' : ''}.`);
+      return this.say(app.obj.model ? `Öffne ${app.obj.title}. Ich zerlege es in ${app.obj.parts.length} Komponenten.` : `Öffne ${app.obj.title}. Ich zerlege es in ${app.obj.parts.length} Komponenten: ${app.obj.parts.slice(0, 6).map(p => p.name).join(', ')}${app.obj.parts.length > 6 ? ' und weitere' : ''}.`);
     }
     if (/(schliess|zusammen(bauen|setzen|fügen|fuegen)|mach .*zu\b|wieder zu)/.test(tf) && app.mode === 'object' && !/(karte|globus|erde)/.test(tf)) {
       app.explode(false);
@@ -274,7 +292,8 @@ export class Assistant {
       const o = findObject(subj);
       if (o) {
         await app.showObject(o);
-        return this.say(`Hier ist das Hologramm: ${app.obj.title}. ${app.obj.subtitle}. Sagen Sie „öffne ihn“, und ich zeige Ihnen die Einzelteile.`);
+        if (!app.obj) return this.say('Das Modell konnte nicht geladen werden.');
+        return this.say(`Hier ist das Hologramm: ${app.obj.title}. ${app.obj.subtitle}. Sagen Sie „öffne ihn“, und ich zeige Ihnen ${app.obj.kind === 'tier' ? 'das Innere' : 'die Einzelteile'}.`);
       }
       if (!indefinite) {
         const place = await S.geocode(subj);
@@ -341,7 +360,7 @@ export class Assistant {
   }
 
   /** Beliebigen Gegenstand von der KI als zerlegbares Hologramm konstruieren lassen */
-  async holoGen(subj) {
+  async holoGen(subj, { explode = false, label = null } = {}) {
     const b = this.brain;
     if (!b.ready && b.state !== 'loading') { try { await b.load(); } catch { /* */ } }
     if (!b.ready || !b.designJSON) return this.knowledge(subj, true);
@@ -350,7 +369,7 @@ export class Assistant {
     try { spec = JSON.parse(localStorage.getItem(key) || 'null'); } catch { /* */ }
     if (!spec) {
       await this.app.showCore();
-      this.say(`Ich konstruiere ein Hologramm von ${subj}. Einen Moment.`);
+      this.say(`Ich konstruiere ${label || 'ein Hologramm von ' + subj}. Einen Moment.`);
       ui.setState('KONSTRUIERE …', 'think');
       try { spec = await b.designJSON(HOLO_PROMPT(subj)); }
       catch (e) { console.warn(e); this.say('Die Konstruktion hat nicht geklappt, ich zeige Ihnen stattdessen ein Bild.'); return this.wikiKnowledge(subj, true); }
@@ -359,6 +378,7 @@ export class Assistant {
     try { obj = buildFromSpec(spec, key); } catch { return this.say('Daraus konnte ich kein Modell bauen. Versuchen Sie es bitte noch einmal.'); }
     try { localStorage.setItem(key, JSON.stringify(spec)); } catch { /* */ }
     await this.app.showObject({ key, build: () => obj });
+    if (explode) { this.app.explode(true); return this.say(`Hier ist ${label || obj.title}: ${obj.parts.slice(0, 6).map(p => p.name).join(', ')}${obj.parts.length > 6 ? ' und weitere' : ''}.`); }
     return this.say(`Hier ist das Hologramm: ${obj.title}. ${obj.subtitle}. Es besteht aus ${obj.parts.length} Bauteilen – sagen Sie „öffne ihn“, und ich zerlege es.`);
   }
 

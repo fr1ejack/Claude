@@ -126,8 +126,10 @@ app.showGlobe = async () => {
 
 app.showObject = async (entry) => {
   if (app.mode === 'object' && app.obj && app.obj.key === entry.key) return;
+  let o;
+  try { ui.setState('LADE MODELL …', 'think'); o = await entry.build(); }
+  catch (e) { console.warn('Modell nicht ladbar', e); return; }
   await hideCurrent();
-  const o = entry.build();
   mountObject(o);
 };
 app.showImageHolo = async (title, url, fallback) => {
@@ -381,6 +383,7 @@ function frame(now) {
     const o = app.obj;
     o.group.rotation.y += dt * (performance.now() - app.lastInteract > 4000 ? 0.18 : 0);
     o.group.rotation.y += app.userRot; app.userRot = 0;
+    o.mixer?.update(rdt);
     if (o.imageMat) { o.imageMat.uniforms.uTime.value = U.time.value; o.group.rotation.y = Math.sin(U.time.value * 0.4) * 0.35; }
     // Explosion
     const sp = rdt / 2.2;
