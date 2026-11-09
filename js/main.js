@@ -538,14 +538,29 @@ document.getElementById('btnShare').addEventListener('click', async () => {
   } catch (e) { if (e?.name !== 'AbortError') ui.log('ai', 'Link zum Weitergeben: ' + url); }
 });
 
-/* ---------- Installierbare App (PWA) ---------- */
+/* ---------- Installierbare App (PWA): auf Handy & PC herunterladbar ---------- */
 let installEvt = null;
-addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; document.getElementById('btnInstall').hidden = false; });
-document.getElementById('btnInstall').addEventListener('click', async () => {
-  if (!installEvt) return;
-  installEvt.prompt();
-  await installEvt.userChoice;
-  installEvt = null; document.getElementById('btnInstall').hidden = true;
+const btnInstall = document.getElementById('btnInstall');
+const isStandalone = matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches || navigator.standalone;
+if (!IS_ARTIFACT && !isStandalone) btnInstall.hidden = false; // immer sichtbar, Anleitung kommt beim Tippen
+addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; btnInstall.hidden = false; });
+addEventListener('appinstalled', () => { btnInstall.hidden = true; ui.log('ai', 'App installiert. Sie finden Jarvis jetzt auf Ihrem Startbildschirm.'); });
+btnInstall.addEventListener('click', async () => {
+  if (installEvt) { // Android / Chrome / Edge: echter Installieren-Dialog
+    installEvt.prompt();
+    const r = await installEvt.userChoice;
+    installEvt = null;
+    if (r.outcome === 'accepted') btnInstall.hidden = true;
+    return;
+  }
+  // Sonst (vor allem iPhone/iPad): Anleitung einblenden, da es dort keinen Auto-Dialog gibt
+  const ua = navigator.userAgent, ios = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  const steps = ios
+    ? '<h2>Auf dem iPhone/iPad installieren</h2><ol><li>Tippen Sie unten in der Leiste auf das <b>Teilen-Symbol</b> (Viereck mit Pfeil nach oben).</li><li>Wählen Sie <b>„Zum Home-Bildschirm“</b>.</li><li>Oben rechts auf <b>„Hinzufügen“</b>.</li></ol><p class="hint">Geht nur in <b>Safari</b>. In Chrome oder im In-App-Browser (z. B. aus Instagram) zuerst in Safari öffnen.</p>'
+    : /Android/.test(ua)
+    ? '<h2>Auf Android installieren</h2><ol><li>Tippen Sie oben rechts im Browser auf das <b>Menü</b> (drei Punkte).</li><li>Wählen Sie <b>„App installieren“</b> bzw. <b>„Zum Startbildschirm hinzufügen“</b>.</li></ol><p class="hint">Am besten in Chrome.</p>'
+    : '<h2>Auf dem PC installieren</h2><ol><li>Klicken Sie in der Adressleiste rechts auf das <b>Installieren-Symbol</b> (Bildschirm mit Pfeil nach unten).</li><li>Oder Menü (drei Punkte) → <b>„App installieren“</b> / <b>„Diese Seite als App installieren“</b>.</li></ol><p class="hint">Funktioniert in Chrome und Edge.</p>';
+  ui.showPanel('APP HERUNTERLADEN', steps + '<p class="hint" style="margin-top:10px">Danach startet Jarvis im Vollbild, mit eigenem Symbol – wie eine normale App.</p>');
 });
 
 ui.chips(IS_ARTIFACT ? ['Ich bin in Dortmund', 'Wo ist Tokio?', 'Zeig mir einen PS5-Controller', 'Öffne ihn', 'Zeig mir eine Drohne', 'Erzähl mir einen Witz', 'Wie funktioniert ein Schwarzes Loch?', 'Merke dir, dass ich Fußball mag'] : ['Wo bin ich?', 'Wo ist Dortmund?', 'Zeig mir den Signal Iduna Park', 'Flüge über Frankfurt', 'Suche Flug LH400', 'Zeig mir einen PS5-Controller', 'Öffne ihn', 'Wie hoch ist der Eiffelturm?'], t => assistant.handle(t));
