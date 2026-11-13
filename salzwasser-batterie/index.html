@@ -39,6 +39,7 @@ section { display: grid; gap: 16px; min-width: 0; }
 
 header { display: grid; gap: 18px; }
 .lead { font-size: 1.15rem; color: var(--muted); }
+.link3d a { color: var(--wasser); font-weight: 700; text-underline-offset: 3px; }
 .steckbrief { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 1px;
   background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
 .steckbrief div { background: var(--bg); padding: 12px 14px; display: grid; gap: 2px; }
@@ -128,6 +129,7 @@ footer { color: var(--muted); font-size: 0.9rem; border-top: 1px solid var(--lin
     <div><dt>Schwierigkeit</dt><dd>leicht</dd></div>
     <div><dt>Ergebnis</dt><dd>4–6 Volt mit 8 Zellen</dd></div>
   </dl>
+  <p class="link3d"><a href="https://claude.ai/artifact/FitbB9fJt4PEBKrw9Pf7Ex" target="_blank" rel="noopener">Die fertige Batterie als 3D-Modell ansehen und drehen →</a></p>
 </header>
 
 <section aria-labelledby="h-sicher">
@@ -147,7 +149,7 @@ footer { color: var(--muted); font-size: 0.9rem; border-top: 1px solid var(--lin
   <h2 id="h-material">Das brauchst du</h2>
   <ul class="material">
     <li><span class="menge">1×</span><span>Eiswürfelbehälter aus Kunststoff mit mindestens 8 Fächern (ein alter, nur für Experimente)</span></li>
-    <li><span class="menge">9×</span><span><strong class="zn">verzinkte</strong> Schrauben oder Nägel, ca. 4 × 40 mm (silbrig glänzend, aus dem Baumarkt; <em>kein</em> Edelstahl)</span></li>
+    <li><span class="menge">8×</span><span><strong class="zn">verzinkte</strong> Schrauben oder Nägel, ca. 4 × 40 mm (silbrig glänzend, aus dem Baumarkt; <em>kein</em> Edelstahl). Kauf ruhig 1–2 als Reserve dazu.</span></li>
     <li><span class="menge">1 m</span><span><strong class="cu">Kupferdraht</strong>, ca. 1–1,5 mm dick (z. B. aus einem Stück Elektrokabel, abisoliert, oder blanker Draht aus dem Bastelladen)</span></li>
     <li><span class="menge">2 EL</span><span>Kochsalz (ca. 30 g)</span></li>
     <li><span class="menge">0,5 l</span><span>warmes Leitungswasser</span></li>
@@ -219,12 +221,12 @@ footer { color: var(--muted); font-size: 0.9rem; border-top: 1px solid var(--lin
   <ol class="schritte">
     <li><div>
       <h3>Kupferdraht vorbereiten</h3>
-      <p>Schneide den Kupferdraht in <strong>9 Stücke</strong> von je ca. 10 cm. Wenn du Elektrokabel benutzt: Plastikhülle komplett entfernen, das Kupfer muss blank sein.</p>
+      <p>Schneide den Kupferdraht in <strong>8 Stücke</strong> von je ca. 10 cm. Wenn du Elektrokabel benutzt: Plastikhülle komplett entfernen, das Kupfer muss blank sein.</p>
       <p class="tipp">Ist der Draht dunkel angelaufen, reibe ihn kurz mit Schleifpapier blank. Blankes Metall gibt mehr Strom.</p>
     </div></li>
     <li><div>
       <h3>„Brücken“ bauen</h3>
-      <p>Wickle bei <strong>8 Schrauben</strong> je ein Kupferdrahtstück 4–5 Mal fest um den Schraubenkopf (oder direkt unter den Kopf). Das andere Ende des Drahts zeigt seitlich weg. So entsteht eine Brücke: Zink auf der einen Seite, Kupfer auf der anderen.</p>
+      <p>Wickle bei <strong>7 Schrauben</strong> je ein Kupferdrahtstück 4–5 Mal fest um den Schraubenkopf (oder direkt unter den Kopf). Das andere Ende des Drahts zeigt seitlich weg. So entsteht eine Brücke: Zink auf der einen Seite, Kupfer auf der anderen.</p>
       <p>Das freie Kupferende biegst du zu einer kleinen Spirale oder Schlaufe. Mehr Kupferfläche im Wasser ergibt mehr Strom.</p>
       <p class="tipp">Die Verbindung zwischen Draht und Schraube muss richtig fest sitzen. Ein Wackelkontakt ist der häufigste Fehler.</p>
     </div></li>
@@ -240,7 +242,7 @@ footer { color: var(--muted); font-size: 0.9rem; border-top: 1px solid var(--lin
     <li><div>
       <h3>Brücken einsetzen</h3>
       <p>Setze die Brücken wie im Bild unten ein: Jede Brücke steckt mit der <span class="zn">Schraube</span> in einem Fach und mit dem <span class="cu">Kupfer</span> im nächsten Fach. So geht es Fach für Fach weiter, eine Kette.</p>
-      <p>Ins <strong>erste Fach</strong> kommt zusätzlich ein einzelner Kupferdraht, das ist dein <span class="cu">Pluspol (+)</span>. Im <strong>letzten Fach</strong> steckt am Ende eine Schraube ohne Partner. Das ist die Schraube der letzten Brücke bzw. die 9. Schraube, dein <span class="zn">Minuspol (−)</span>.</p>
+      <p>Ins <strong>erste Fach</strong> kommt zusätzlich ein einzelner Kupferdraht, das ist dein <span class="cu">Pluspol (+)</span>. Ins <strong>letzte Fach</strong> kommt zusätzlich die 8. Schraube ohne Draht, das ist dein <span class="zn">Minuspol (−)</span>. Bei 8 Fächern hast du also 7 Brücken, einen einzelnen Draht und eine einzelne Schraube.</p>
       <p class="tipp">In jedem Fach müssen genau eine Schraube und ein Kupferdraht stecken, und die beiden dürfen sich <strong>nicht berühren</strong>.</p>
     </div></li>
   </ol>

@@ -1,0 +1,487 @@
+<title>Salzbatterie in 3D</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: Vollbild-3D-Szene, schwebendes Steuerfeld links (unten auf dem Handy).
+   Farbcode wie in der Anleitung: Kupfer = Pluspol, Zink = Minuspol, Türkis = Salzwasser. */
+:root {
+  --bg: #e9f0f0; --panel: #ffffffeb; --ink: #14232a; --muted: #52656c; --line: #c9d8da;
+  --kupfer: #c4612a; --zink: #6c7f8f; --wasser: #2b8c97; --wasser-hell: #d6eef0;
+  --ok: #2c7a3f; --ok-bg: #e6f4e9; --warn: #b3261e; --warn-bg: #fdecea;
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-text: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f1b1e; --panel: #172529eb; --ink: #e4eef0; --muted: #9db1b6; --line: #2a3d42;
+  --kupfer: #ec8a52; --zink: #9db0bf; --wasser: #4fb8c3; --wasser-hell: #173a3f;
+  --ok: #7fd18f; --ok-bg: #16301d; --warn: #ff8a80; --warn-bg: #3a1d1b; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0f1b1e; --panel: #172529eb; --ink: #e4eef0; --muted: #9db1b6; --line: #2a3d42;
+  --kupfer: #ec8a52; --zink: #9db0bf; --wasser: #4fb8c3; --wasser-hell: #173a3f;
+  --ok: #7fd18f; --ok-bg: #16301d; --warn: #ff8a80; --warn-bg: #3a1d1b; color-scheme: dark }
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.45 var(--f-text); overflow: hidden; }
+#szene { position: fixed; inset: 0; }
+.panel { position: fixed; top: calc(16px + env(safe-area-inset-top, 0px)); left: max(16px, env(safe-area-inset-left, 0px));
+  width: min(320px, calc(100vw - 32px)); max-height: calc(100% - 32px); overflow: auto;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px;
+  backdrop-filter: blur(10px); display: grid; gap: 12px; }
+h1 { font: 700 1.3rem/1.15 var(--f-display); margin: 0; text-wrap: balance; }
+.sub { color: var(--muted); margin: 0; font-size: 0.9rem; }
+label { font-weight: 700; display: grid; gap: 4px; }
+label.check { display: flex; align-items: center; gap: 8px; font-weight: 400; }
+input[type=range] { width: 100%; accent-color: var(--wasser); }
+input[type=checkbox] { accent-color: var(--wasser); width: 17px; height: 17px; }
+.werte { display: flex; gap: 22px; align-items: baseline; flex-wrap: wrap; }
+.wert b { font: 700 1.8rem/1 var(--f-display); color: var(--wasser); font-variant-numeric: tabular-nums; display: block; }
+.wert span { font-size: 0.8rem; color: var(--muted); }
+.pill { font: 600 0.78rem/1 var(--f-mono); padding: 5px 9px; border-radius: 99px; justify-self: start; }
+.pill.ja { background: var(--ok-bg); color: var(--ok); }
+.pill.knapp { background: var(--wasser-hell); color: var(--wasser); }
+.pill.nein { background: var(--warn-bg); color: var(--warn); }
+.row { display: flex; flex-wrap: wrap; gap: 6px; }
+button { font: inherit; font-size: 0.88rem; padding: 5px 10px; border-radius: 8px; border: 1px solid var(--line);
+  background: transparent; color: var(--ink); cursor: pointer; }
+button:hover { border-color: var(--wasser); }
+button:focus-visible, input:focus-visible { outline: 3px solid var(--wasser); outline-offset: 2px; }
+.ktitel { font: 600 0.75rem/1 var(--f-mono); text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
+.hint { font-size: 0.8rem; color: var(--muted); margin: 0; }
+.legende { display: grid; gap: 4px; font-size: 0.85rem; }
+.legende i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.klapp { display: none; }
+/* Beschriftungen in der Szene */
+.lbl { font: 600 12px/1.25 var(--f-text); padding: 3px 7px; border-radius: 6px; background: var(--panel);
+  border: 1px solid var(--line); color: var(--ink); white-space: nowrap; pointer-events: none; }
+.lbl.cu { border-color: var(--kupfer); color: var(--kupfer); }
+.lbl.zn { border-color: var(--zink); color: var(--zink); }
+.lbl.wa { border-color: var(--wasser); color: var(--wasser); }
+.lbl.pol { font-size: 15px; font-weight: 700; }
+.lbl small { display: block; font-weight: 400; color: var(--muted); font-size: 11px; }
+.nr { font: 600 11px/1 var(--f-mono); color: var(--muted); pointer-events: none; }
+@media (max-width: 640px) {
+  .panel { top: auto; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); max-height: 46%; padding: 12px; gap: 10px; }
+  .klapp { display: inline-block; position: absolute; top: 10px; right: 10px; }
+  .panel.zu > :not(h1):not(.klapp) { display: none; }
+  .lbl { font-size: 10.5px; padding: 2px 5px; } .lbl small { display: none; }
+  .legende, .hint { display: none; }
+}
+</style>
+
+<div id="szene"></div>
+<div class="panel" id="panel">
+  <button class="klapp" id="klapp" aria-label="Feld ein- oder ausklappen">–</button>
+  <h1>Eiswürfel-Salzbatterie</h1>
+  <p class="sub">3D-Modell zum Drehen. Jedes Fach ist eine Zelle.</p>
+  <label for="zellen">Benutzte Fächer: <span id="zahl">8</span>
+    <input type="range" id="zellen" min="1" max="8" value="8">
+  </label>
+  <div class="werte">
+    <div class="wert"><b id="u">6,4 V</b><span>ohne LED</span></div>
+    <div class="wert"><b id="ul">≈ 3,8 V</b><span>mit LED</span></div>
+  </div>
+  <span class="pill ja" id="led-status">LED leuchtet</span>
+  <label class="check"><input type="checkbox" id="beschr" checked> Beschriftungen</label>
+  <label class="check"><input type="checkbox" id="strom" checked> Elektronenfluss zeigen</label>
+  <label class="check"><input type="checkbox" id="rund"> Automatisch drehen</label>
+  <div class="ktitel">Ansicht</div>
+  <div class="row">
+    <button data-ansicht="schraeg">3D</button>
+    <button data-ansicht="oben">Oben</button>
+    <button data-ansicht="vorn">Vorn</button>
+    <button data-ansicht="bruecke">Brücke nah</button>
+    <button data-ansicht="led">LED nah</button>
+  </div>
+  <div class="legende">
+    <span><i style="background:var(--kupfer)"></i>Kupfer = Pluspol (+)</span>
+    <span><i style="background:var(--zink)"></i>Zink (verzinkte Schraube) = Minuspol (−)</span>
+    <span><i style="background:var(--wasser)"></i>Salzwasser</span>
+  </div>
+  <p class="hint">Ziehen = drehen · Mausrad oder 2 Finger = zoomen · Rechtsklick = verschieben</p>
+</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+// ----------------------------------------------------------------- Grundgerüst
+// Einheiten: Millimeter. x = entlang des Behälters, y = oben, z = zum Betrachter.
+const el = document.getElementById('szene');
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+el.appendChild(renderer.domElement);
+const labelR = new CSS2DRenderer();
+Object.assign(labelR.domElement.style, { position: 'absolute', inset: '0', pointerEvents: 'none' });
+el.appendChild(labelR.domElement);
+
+const scene = new THREE.Scene();
+const cssVar = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const setzeHintergrund = () => { scene.background = new THREE.Color(cssVar('--bg')); };
+setzeHintergrund();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', setzeHintergrund);
+
+const cam = new THREE.PerspectiveCamera(35, 1, 1, 5000);
+const ctrl = new OrbitControls(cam, renderer.domElement);
+Object.assign(ctrl, { enableDamping: true, dampingFactor: 0.08, minDistance: 40, maxDistance: 1600,
+  maxPolarAngle: Math.PI * 0.49, screenSpacePanning: true, autoRotateSpeed: 1.0 });
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0x8a8070, 1.5));
+const sonne = new THREE.DirectionalLight(0xffffff, 2.0);
+sonne.position.set(-150, 400, 250);
+sonne.castShadow = true;
+sonne.shadow.mapSize.set(2048, 2048);
+Object.assign(sonne.shadow.camera, { left: -300, right: 300, top: 300, bottom: -300, far: 1200 });
+scene.add(sonne);
+
+// Tisch
+const tisch = new THREE.Mesh(new THREE.BoxGeometry(900, 10, 520),
+  new THREE.MeshStandardMaterial({ color: 0xc9a77c, roughness: 0.85 }));
+tisch.position.set(0, -5, 60);
+tisch.receiveShadow = true;
+scene.add(tisch);
+
+// ----------------------------------------------------------------- Materialien
+const M = {
+  schale: new THREE.MeshPhysicalMaterial({ color: 0xeaf6ff, roughness: 0.25, transparent: true, opacity: 0.38,
+    depthWrite: false, side: THREE.DoubleSide }),
+  schaleKante: new THREE.LineBasicMaterial({ color: 0x7fa3b5, transparent: true, opacity: 0.7 }),
+  wasser: new THREE.MeshPhysicalMaterial({ color: 0x48b7c4, roughness: 0.1, transparent: true, opacity: 0.55, depthWrite: false }),
+  zink: new THREE.MeshStandardMaterial({ color: 0xb4c0ca, metalness: 0.45, roughness: 0.4 }),
+  kupfer: new THREE.MeshStandardMaterial({ color: 0xd2733a, metalness: 0.55, roughness: 0.35 }),
+  kabelRot: new THREE.MeshStandardMaterial({ color: 0xc8302c, roughness: 0.55 }),
+  kabelSchwarz: new THREE.MeshStandardMaterial({ color: 0x24272b, roughness: 0.55 }),
+  klemmeRot: new THREE.MeshStandardMaterial({ color: 0xe0453c, roughness: 0.5 }),
+  klemmeSchwarz: new THREE.MeshStandardMaterial({ color: 0x3a3e44, roughness: 0.5 }),
+  stahl: new THREE.MeshStandardMaterial({ color: 0xd0d4d8, metalness: 0.9, roughness: 0.3 }),
+  ledAus: new THREE.MeshPhysicalMaterial({ color: 0xff3b2f, roughness: 0.15, transparent: true, opacity: 0.8,
+    emissive: 0xff2010, emissiveIntensity: 0 }),
+  elektron: new THREE.MeshBasicMaterial({ color: 0x3fa9ff }),
+};
+
+// ----------------------------------------------------------------- Eiswürfelbehälter (fest, 8 Fächer)
+const N_MAX = 8, FACH = 30, WAND = 2, TIEFE = 25, BODEN = 2;
+const L = N_MAX * (FACH + WAND) + WAND, B = FACH + 2 * WAND;
+const fachX = (i) => -L / 2 + WAND + FACH / 2 + i * (FACH + WAND);
+const WASSER_H = BODEN + TIEFE * 0.75;
+const RAND = BODEN + TIEFE;
+
+const schale = new THREE.Group();
+scene.add(schale);
+function schalenBox(w, h, d, x, y, z) {
+  const g = new THREE.BoxGeometry(w, h, d);
+  const m = new THREE.Mesh(g, M.schale);
+  m.position.set(x, y, z); m.renderOrder = 3;
+  schale.add(m);
+  const k = new THREE.LineSegments(new THREE.EdgesGeometry(g), M.schaleKante);
+  k.position.copy(m.position); schale.add(k);
+}
+schalenBox(L, BODEN, B, 0, BODEN / 2, 0);                       // Boden
+for (const s of [-1, 1]) schalenBox(L, TIEFE, WAND, 0, BODEN + TIEFE / 2, s * (B / 2 - WAND / 2)); // Längswände
+for (let i = 0; i <= N_MAX; i++) {                               // Querstege
+  schalenBox(WAND, TIEFE, B - 2 * WAND, -L / 2 + WAND / 2 + i * (FACH + WAND), BODEN + TIEFE / 2, 0);
+}
+// Umlaufender Rand oben
+for (const s of [-1, 1]) schalenBox(L + 6, 1.2, 3, 0, RAND, s * (B / 2 + 1.5));
+for (const s of [-1, 1]) schalenBox(3, 1.2, B + 6, s * (L / 2 + 1.5), RAND, 0);
+
+// ----------------------------------------------------------------- Bauteile
+function rohr(punkte, r, mat, seg = 160) {
+  const kurve = new THREE.CatmullRomCurve3(punkte, false, 'centripetal');
+  const m = new THREE.Mesh(new THREE.TubeGeometry(kurve, seg, r, 10), mat);
+  m.castShadow = true;
+  return { mesh: m, kurve };
+}
+
+// Verzinkte Schraube: Spitze unten bei yUnten, Kopf oben
+function schraube(x, z) {
+  const g = new THREE.Group();
+  const LAENGE = 40, yUnten = BODEN + 1.5;
+  const schaft = new THREE.Mesh(new THREE.CylinderGeometry(2, 2, LAENGE - 6, 16), M.zink);
+  schaft.position.y = yUnten + 4 + (LAENGE - 6) / 2;
+  const spitze = new THREE.Mesh(new THREE.ConeGeometry(2, 4, 16), M.zink);
+  spitze.rotation.x = Math.PI; spitze.position.y = yUnten + 2;
+  const kopf = new THREE.Mesh(new THREE.CylinderGeometry(4, 3.6, 2.6, 24), M.zink);
+  kopf.position.y = yUnten + LAENGE - 1.3;
+  const schlitz = new THREE.Mesh(new THREE.BoxGeometry(7, 0.8, 1.2), new THREE.MeshStandardMaterial({ color: 0x5d6a74 }));
+  schlitz.position.y = yUnten + LAENGE + 0.05;
+  // Gewinde andeuten
+  for (let y = yUnten + 5; y < yUnten + LAENGE - 8; y += 2) {
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(2, 0.35, 6, 20), M.zink);
+    ring.rotation.x = Math.PI / 2 + 0.18; ring.position.y = y; g.add(ring);
+  }
+  g.add(schaft, spitze, kopf, schlitz);
+  g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+  g.position.set(x, 0, z);
+  return { gruppe: g, kopfY: yUnten + LAENGE - 2.6, obenY: yUnten + LAENGE };
+}
+
+// Kupferspirale im Wasser: senkrechte Wendel von unten nach oben
+function wendel(x, z, yVon, yBis, r = 4.5, windungen = 3) {
+  const p = [];
+  const n = windungen * 16;
+  for (let i = 0; i <= n; i++) {
+    const a = (i / 16) * Math.PI * 2;
+    p.push(new THREE.Vector3(x + Math.cos(a) * r, yVon + (yBis - yVon) * (i / n), z + Math.sin(a) * r));
+  }
+  return p;
+}
+
+const aufbau = new THREE.Group();
+scene.add(aufbau);
+const labels = [];
+let elektronenPfad = null;
+const elektronen = [];
+let ledLicht = null, ledMat = null;
+
+function label(text, klasse, pos, parent = aufbau) {
+  const d = document.createElement('div');
+  d.className = klasse; d.innerHTML = text;
+  const o = new CSS2DObject(d);
+  o.position.copy(pos);
+  parent.add(o); labels.push(o);
+  o.visible = document.getElementById('beschr').checked;
+  return o;
+}
+
+function leere() {
+  for (const l of labels) { l.element.remove(); l.removeFromParent(); }
+  labels.length = 0;
+  aufbau.traverse((o) => { if (o.geometry) o.geometry.dispose(); });
+  aufbau.clear();
+  elektronen.length = 0;
+}
+
+function baue(n) {
+  leere();
+  const xs = (i) => fachX(i) + 8;   // Schraube rechts im Fach
+  const xk = (i) => fachX(i) - 8;   // Kupfer links im Fach
+
+  // Wasser + Nummern
+  for (let i = 0; i < N_MAX; i++) {
+    const nr = document.createElement('div'); nr.className = 'nr'; nr.textContent = i + 1;
+    const o = new CSS2DObject(nr); o.position.set(fachX(i), 0.5, B / 2 + 9); aufbau.add(o); labels.push(o);
+    if (i >= n) continue;
+    const w = new THREE.Mesh(new THREE.BoxGeometry(FACH - 0.4, WASSER_H - BODEN, B - 2 * WAND - 0.4), M.wasser);
+    w.position.set(fachX(i), BODEN + (WASSER_H - BODEN) / 2, 0); w.renderOrder = 2;
+    aufbau.add(w);
+  }
+
+  // Schrauben: in jedem benutzten Fach genau eine
+  const schrauben = [];
+  for (let i = 0; i < n; i++) {
+    const s = schraube(xs(i), 0); aufbau.add(s.gruppe); schrauben.push(s);
+  }
+
+  // Brücken: Draht um den Kopf der Schraube in Fach i -> Kupferwendel in Fach i+1
+  for (let i = 0; i < n - 1; i++) {
+    const s = schrauben[i], x0 = xs(i), x1 = xk(i + 1);
+    const p = [];
+    // Wicklung unter dem Kopf
+    for (let k = 0; k <= 4 * 12; k++) {
+      const a = (k / 12) * Math.PI * 2;
+      p.push(new THREE.Vector3(x0 + Math.cos(a) * 2.8, s.kopfY - 4 + (k / 48) * 3, Math.sin(a) * 2.8));
+    }
+    // Bogen über den Steg
+    p.push(new THREE.Vector3(x0 + 6, s.kopfY + 1, 0));
+    p.push(new THREE.Vector3((x0 + x1) / 2, s.kopfY + 6, 0));
+    p.push(new THREE.Vector3(x1, s.kopfY - 2, 0));
+    p.push(new THREE.Vector3(x1 + 0.3, WASSER_H + 4, 0));
+    // Wendel im Wasser (von oben nach unten)
+    p.push(...wendel(x1, 0, WASSER_H - 1, BODEN + 3).reverse());
+    const { mesh } = rohr(p, 0.65, M.kupfer, 420);
+    aufbau.add(mesh);
+  }
+
+  // Einzelner Kupferdraht in Fach 1 = Pluspol
+  const plusOben = new THREE.Vector3(xk(0) - 4, RAND + 22, 0);
+  {
+    const p = [plusOben.clone(), new THREE.Vector3(xk(0) - 2, RAND + 12, 0), new THREE.Vector3(xk(0), WASSER_H + 4, 0),
+      ...wendel(xk(0), 0, WASSER_H - 1, BODEN + 3).reverse()];
+    aufbau.add(rohr(p, 0.65, M.kupfer, 300).mesh);
+  }
+  const minusOben = new THREE.Vector3(xs(n - 1), schrauben[n - 1].obenY, 0);
+
+  // ----------------------------------------------- LED mit Krokodilkabeln
+  const led = new THREE.Group();
+  const ledPos = new THREE.Vector3(0, 0, 95);
+  led.position.copy(ledPos);
+  aufbau.add(led);
+  ledMat = M.ledAus.clone();
+  const kuppel = new THREE.Mesh(new THREE.SphereGeometry(2.5, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), ledMat);
+  kuppel.position.y = 34;
+  const koerper = new THREE.Mesh(new THREE.CylinderGeometry(2.5, 2.5, 5, 24), ledMat);
+  koerper.position.y = 31.5;
+  const kragen = new THREE.Mesh(new THREE.CylinderGeometry(2.9, 2.9, 1, 24), ledMat);
+  kragen.position.y = 29.3;
+  led.add(kuppel, koerper, kragen);
+  // Beine: langes (+) links, kurzes (−) rechts
+  const beinLang = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 26, 8), M.stahl);
+  beinLang.position.set(-1.27, 29 - 13, 0);
+  const beinKurz = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 22, 8), M.stahl);
+  beinKurz.position.set(1.27, 29 - 11, 0);
+  led.add(beinLang, beinKurz);
+  ledLicht = new THREE.PointLight(0xff3020, 0, 90, 1.8);
+  ledLicht.position.y = 34;
+  led.add(ledLicht);
+
+  // Krokodilklemme: kleiner Körper mit Zähnen
+  function klemme(pos, mat, drehY = 0, drehZ = 0) {
+    const g = new THREE.Group();
+    const k1 = new THREE.Mesh(new THREE.BoxGeometry(14, 2, 4), mat); k1.position.y = 1.2;
+    const k2 = new THREE.Mesh(new THREE.BoxGeometry(14, 2, 4), mat); k2.position.y = -1.2; k2.rotation.z = -0.12;
+    const ende = new THREE.Mesh(new THREE.BoxGeometry(3, 3, 4.6), M.stahl); ende.position.x = -7.5;
+    g.add(k1, k2, ende);
+    g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+    g.position.copy(pos); g.rotation.y = drehY; g.rotation.z = drehZ;
+    aufbau.add(g);
+    return g;
+  }
+  const beinPlus = new THREE.Vector3(ledPos.x - 1.27, 4, ledPos.z);
+  const beinMinus = new THREE.Vector3(ledPos.x + 1.27, 8, ledPos.z);
+  klemme(plusOben.clone().add(new THREE.Vector3(-5, 2, 0)), M.klemmeRot, 0, 0.5);
+  klemme(minusOben.clone().add(new THREE.Vector3(6, 1, 0)), M.klemmeSchwarz, Math.PI, 0.5);
+  klemme(beinPlus.clone().add(new THREE.Vector3(-6, 0, 0)), M.klemmeRot, 0, 0);
+  klemme(beinMinus.clone().add(new THREE.Vector3(6, 0, 0)), M.klemmeSchwarz, Math.PI, 0);
+
+  // Rotes Kabel: Pluspol (Kupfer) -> langes Bein
+  const rotP = [plusOben.clone().add(new THREE.Vector3(-12, 6, 0)), new THREE.Vector3(plusOben.x - 30, 3, 25),
+    new THREE.Vector3(plusOben.x * 0.6, 1.5, 70), new THREE.Vector3(beinPlus.x - 40, 1.5, ledPos.z + 8), beinPlus.clone().add(new THREE.Vector3(-13, 0, 0))];
+  const rot = rohr(rotP, 1.4, M.kabelRot);
+  aufbau.add(rot.mesh);
+  // Schwarzes Kabel: Minuspol (Schraube) -> kurzes Bein
+  const schwarzP = [minusOben.clone().add(new THREE.Vector3(13, 4, 0)), new THREE.Vector3(minusOben.x + 30, 3, 25),
+    new THREE.Vector3(minusOben.x * 0.6, 1.5, 70), new THREE.Vector3(beinMinus.x + 40, 1.5, ledPos.z + 8), beinMinus.clone().add(new THREE.Vector3(13, 0, 0))];
+  const schwarz = rohr(schwarzP, 1.4, M.kabelSchwarz);
+  aufbau.add(schwarz.mesh);
+
+  // Elektronenpfad: Minuspol -> schwarzes Kabel -> LED -> rotes Kabel (rückwärts) -> Pluspol
+  const pfad = new THREE.CatmullRomCurve3([...schwarzP, ...[...rotP].reverse()], false, 'centripetal');
+  elektronenPfad = pfad;
+  for (let i = 0; i < 26; i++) {
+    const e = new THREE.Mesh(new THREE.SphereGeometry(1.7, 10, 8), M.elektron);
+    e.userData.t = i / 26;
+    aufbau.add(e); elektronen.push(e);
+  }
+
+  // ----------------------------------------------- Beschriftungen
+  const V = (x, y, z) => new THREE.Vector3(x, y, z);
+  label('Eiswürfelbehälter<small>Kunststoff, 8 Fächer</small>', 'lbl', V(fachX(N_MAX - 1) + 10, RAND + 4, -B / 2 - 14));
+  label('Salzwasser<small>2 EL Salz auf 0,5 l</small>', 'lbl wa', V(fachX(Math.min(1, n - 1)), WASSER_H - 6, -B / 2 - 12));
+  label('Pluspol +<small>einzelner Kupferdraht</small>', 'lbl cu pol', plusOben.clone().add(V(-6, 18, 0)));
+  label('Minuspol −<small>letzte Schraube</small>', 'lbl zn pol', minusOben.clone().add(V(8, 22, 0)));
+  if (n >= 2) {
+    const i = Math.min(2, n - 2);
+    label('Brücke<small>Schraube in Fach ' + (i + 1) + ', Kupfer in Fach ' + (i + 2) + '</small>', 'lbl',
+      V((xs(i) + xk(i + 1)) / 2, schrauben[i].kopfY + 18, 0));
+    const ik = Math.min(5, n - 1), is = Math.min(1, n - 1);
+    label('Kupferdraht<small>Spirale = mehr Fläche</small>', 'lbl cu', V(xk(ik), BODEN + 6, -B / 2 - 16));
+    label('Verzinkte Schraube<small>Zink gibt Elektronen ab</small>', 'lbl zn', V(xs(is) + 2, BODEN + 10, B / 2 + 24));
+    label('Draht fest um den Kopf wickeln', 'lbl cu', V(xs(i), schrauben[i].kopfY - 3, -B / 2 - 12));
+  }
+  if (n >= 3) label('Stege trocken halten!', 'lbl', V(-L / 2 + WAND / 2 + 2 * (FACH + WAND), RAND + 2, -B / 2 - 30));
+  label('LED<small>langes Bein an +, kurzes an −</small>', 'lbl', ledPos.clone().add(V(0, 46, 0)));
+  label('Krokodilkabel rot', 'lbl', rot.kurve.getPoint(0.45).add(V(0, 6, 0)));
+  label('Krokodilkabel schwarz', 'lbl', schwarz.kurve.getPoint(0.62).add(V(0, 6, 0)));
+  const mitte = pfad.getPoint(0.12).add(V(10, 18, 0));
+  label('Elektronen fließen von − nach +', 'lbl', mitte).userData.strom = true;
+
+  aktualisiereWerte(n);
+}
+
+// ----------------------------------------------------------------- Spannung / LED
+const fmt = (v) => v.toFixed(1).replace('.', ',') + ' V';
+let ledHell = 0;
+function aktualisiereWerte(n) {
+  const u = 0.8 * n, ul = u * 0.6;
+  document.getElementById('zahl').textContent = n;
+  document.getElementById('u').textContent = fmt(u);
+  document.getElementById('ul').textContent = '≈ ' + fmt(ul);
+  const st = document.getElementById('led-status');
+  if (ul >= 1.8 * 1.25) { ledHell = Math.min(1, (ul - 1.8) / 2.2 + 0.35); st.className = 'pill ja'; st.textContent = 'LED leuchtet'; }
+  else if (ul >= 1.8) { ledHell = 0.18; st.className = 'pill knapp'; st.textContent = 'LED glimmt schwach (Raum abdunkeln)'; }
+  else { ledHell = 0; st.className = 'pill nein'; st.textContent = 'zu wenig Spannung für die LED'; }
+  ledMat.emissiveIntensity = ledHell * 3;
+  ledLicht.intensity = ledHell * 1800;
+}
+
+// ----------------------------------------------------------------- Bedienung
+const slider = document.getElementById('zellen');
+slider.addEventListener('input', () => baue(+slider.value));
+document.getElementById('beschr').addEventListener('change', (e) =>
+  labels.forEach((l) => { l.visible = e.target.checked && (!l.userData.strom || document.getElementById('strom').checked); }));
+document.getElementById('strom').addEventListener('change', (e) =>
+  labels.forEach((l) => { if (l.userData.strom) l.visible = e.target.checked && document.getElementById('beschr').checked; }));
+document.getElementById('rund').addEventListener('change', (e) => (ctrl.autoRotate = e.target.checked));
+document.getElementById('klapp').addEventListener('click', (e) => {
+  const p = document.getElementById('panel'); p.classList.toggle('zu');
+  e.target.textContent = p.classList.contains('zu') ? '+' : '–';
+});
+
+const ANSICHTEN = {
+  schraeg: { pos: [-150, 260, 420], ziel: [10, 20, 30] },
+  oben: { pos: [0, 520, 0.1], ziel: [0, 0, 30] },
+  vorn: { pos: [0, 70, 470], ziel: [0, 25, 30] },
+  bruecke: { pos: [fachX(3) - 30, 80, 90], ziel: [fachX(3) - 16, 25, 0] },
+  led: { pos: [55, 70, 165], ziel: [0, 22, 95] },
+};
+let flug = null;
+function fliegeZu(name, sofort = false) {
+  const a = ANSICHTEN[name];
+  const ziel = new THREE.Vector3(...a.ziel);
+  // Auf schmalen Bildschirmen weiter weg, damit der ganze Behälter ins Bild passt
+  const faktor = el.clientWidth <= 640 && name !== 'bruecke' && name !== 'led' ? 1.9 : 1;
+  const pos = new THREE.Vector3(...a.pos).sub(ziel).multiplyScalar(faktor).add(ziel);
+  if (sofort) { cam.position.copy(pos); ctrl.target.copy(ziel); return; }
+  flug = { t: 0, p0: cam.position.clone(), z0: ctrl.target.clone(), p1: pos, z1: ziel };
+}
+document.querySelectorAll('[data-ansicht]').forEach((b) => b.addEventListener('click', () => fliegeZu(b.dataset.ansicht)));
+fliegeZu('schraeg', true);
+
+function groesse() {
+  const w = el.clientWidth, h = el.clientHeight;
+  renderer.setSize(w, h); labelR.setSize(w, h);
+  cam.aspect = w / h;
+  const versatz = w > 900 ? 160 : 0;   // Modell neben das Steuerfeld schieben
+  if (versatz) cam.setViewOffset(w, h, -versatz, 0, w, h); else cam.clearViewOffset();
+  cam.updateProjectionMatrix();
+}
+addEventListener('resize', groesse);
+groesse();
+// Auf dem Handy startet das Steuerfeld eingeklappt, damit das Modell sichtbar ist
+if (el.clientWidth <= 640) { document.getElementById('panel').classList.add('zu'); document.getElementById('klapp').textContent = '+'; }
+baue(+slider.value);
+
+const reduziert = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let tAlt = performance.now();
+renderer.setAnimationLoop((jetzt) => {
+  const dt = Math.max(0, Math.min((jetzt - tAlt) / 1000, 0.05)); tAlt = jetzt;
+  if (flug) {
+    flug.t = Math.min(1, flug.t + dt / 0.9);
+    const e = flug.t < 0.5 ? 2 * flug.t * flug.t : 1 - (-2 * flug.t + 2) ** 2 / 2;
+    cam.position.lerpVectors(flug.p0, flug.p1, e); ctrl.target.lerpVectors(flug.z0, flug.z1, e);
+    if (flug.t >= 1) flug = null;
+  }
+  const zeigen = document.getElementById('strom').checked && ledHell > 0;
+  for (const e of elektronen) {
+    e.visible = zeigen;
+    if (!zeigen) continue;
+    if (!reduziert) e.userData.t = (e.userData.t + dt * 0.05 * (0.4 + ledHell)) % 1;
+    e.position.copy(elektronenPfad.getPointAt(e.userData.t));
+  }
+  if (ledHell > 0 && !reduziert) ledLicht.intensity = ledHell * 1800 * (0.94 + 0.06 * Math.sin(jetzt / 90));
+  ctrl.update();
+  renderer.render(scene, cam); labelR.render(scene, cam);
+});
+window.__bereit = true;
+</script>
