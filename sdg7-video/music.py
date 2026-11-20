@@ -1,9 +1,15 @@
-# Erzeugt eine einfache, lizenzfreie Hintergrundmusik (music.wav, 170 s).
-# Ruhig/nachdenklich bis 1:15, dann optimistisch mit Beat. Blackout bei 0:15 = fast Stille.
+# Erzeugt eine einfache, lizenzfreie Hintergrundmusik (music.wav), passend zur Zeitachse in timemap.json.
+# Ruhig/nachdenklich bis zu den Kernzielen, dann optimistisch mit Beat. Beim Blackout fast Stille.
 import numpy as np, wave
 
 SR = 44100
-DUR = 170
+import json, os
+_tm = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'timemap.json'))) if os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'timemap.json')) else {'dur': 170, 'segs': [[0, 170, 0, 170]]}
+def nt(t):  # alte Animationszeit -> neue (gestraffte) Zeit
+    for ns, ne, os_, oe in _tm['segs']:
+        if os_ <= t <= oe: return ns + (t - os_) / (oe - os_) * (ne - ns) if oe > os_ else ns
+    return _tm['dur']
+DUR = _tm['dur']
 t = np.arange(int(SR * DUR)) / SR
 out = np.zeros_like(t)
 
@@ -44,14 +50,14 @@ for k in range(int(DUR / step)):
     st = k * step
     ch = chords[int(st / bar) % 4]
     m = (ch + [ch[0] + 12])[[0, 1, 2, 3, 2, 1, 2, 3][k % 8]] + 12
-    if 75 <= st < 168: pluck(st, m, 0.09)
-    elif 20.5 <= st < 44: pluck(st, m, 0.04)
+    if nt(75) <= st < DUR - 2: pluck(st, m, 0.09)
+    elif nt(20.5) <= st < nt(44): pluck(st, m, 0.04)
 
 # Kick + Hi-Hat ab 75 s
 rng = np.random.default_rng(1)
 for k in range(int(DUR / (bar / 4))):
     st = k * bar / 4
-    if not (75 <= st < 166): continue
+    if not (nt(75) <= st < DUR - 4): continue
     n = int(0.25 * SR); tt = np.arange(n) / SR
     kick = np.sin(2 * np.pi * (50 + 90 * np.exp(-tt * 30)) * tt) * np.exp(-tt * 14)
     add(st, 0.25, 0.22 * kick)
@@ -66,12 +72,12 @@ def ramp(a, b, va, vb):
     m = (t >= a) & (t < b); g[m] = va + (vb - va) * (t[m] - a) / (b - a)
 g[:] = 0.8
 ramp(0, 1, 0, 0.8)
-ramp(15.6, 16.0, 0.8, 0.08); g[(t >= 16) & (t < 19.5)] = 0.08
-ramp(19.5, 21, 0.08, 0.8)
-ramp(45, 75, 0.8, 0.7)
-g[(t >= 75)] = 1.0
-ramp(74, 76, 0.7, 1.0)
-ramp(166, 170, 1.0, 0.0)
+ramp(nt(15.6), nt(16.0), 0.8, 0.08); g[(t >= nt(16)) & (t < nt(19.5))] = 0.08
+ramp(nt(19.5), nt(21), 0.08, 0.8)
+ramp(nt(45), nt(75), 0.8, 0.7)
+g[(t >= nt(75))] = 1.0
+ramp(nt(74), nt(76), 0.7, 1.0)
+ramp(DUR - 4, DUR, 1.0, 0.0)
 out *= g
 out /= np.max(np.abs(out)) / 0.8
 

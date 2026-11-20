@@ -9,7 +9,8 @@ const fs = require('fs');
 
 const DIR = __dirname;
 const URL = 'file://' + path.join(DIR, 'animation.html');
-const DUR = 170;
+const TM = JSON.parse(fs.readFileSync(path.join(__dirname, 'timemap.json'), 'utf8'));
+const DUR = TM.dur;
 
 async function openPage(browser, scale) {
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 }, deviceScaleFactor: scale });
@@ -36,7 +37,7 @@ async function renderChunk(browser, scale, fps, from, to, file) {
   const ff = spawn('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', String(fps), '-c:v', 'mjpeg', '-i', '-',
     '-c:v', 'libx264', '-preset', 'medium', '-crf', '20', '-pix_fmt', 'yuv420p', file], { stdio: ['pipe', 'inherit', 'inherit'] });
   for (let i = from; i < to; i++) {
-    await page.evaluate(t => window.renderFrame(t), i / fps);
+    await page.evaluate(T => window.renderFrame(window.mapT(T)), i / fps);
     const buf = await page.locator('#stage').screenshot({ type: 'jpeg', quality: 95 });
     if (!ff.stdin.write(buf)) await new Promise(r => ff.stdin.once('drain', r));
   }
@@ -46,7 +47,7 @@ async function renderChunk(browser, scale, fps, from, to, file) {
 }
 
 async function video(fps = 30, scale = 1.5, workers = 4) {
-  const total = DUR * fps;
+  const total = Math.round(DUR * fps);
   const browser = await chromium.launch();
   const tmp = path.join(DIR, '.chunks');
   fs.mkdirSync(tmp, { recursive: true });

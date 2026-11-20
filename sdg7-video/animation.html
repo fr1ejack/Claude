@@ -21,6 +21,7 @@ html,body{margin:0;background:#111;overflow:hidden}
   <svg id="svg" viewBox="0 0 1280 720" width="1280" height="720" xmlns="http://www.w3.org/2000/svg"></svg>
   <div id="cap"></div>
 </div>
+<script src="timemap.js"></script>
 <script>
 // ======================================================================
 //  SDG 7 – Erklärvideo. Jedes Bild wird aus der Zeit t (Sekunden) berechnet.
@@ -685,9 +686,10 @@ window.renderFrame=renderFrame;
 if(!window.RENDER_MODE){
   const params=new URLSearchParams(location.search);
   let start=performance.now()-(parseFloat(params.get('t'))||0)*1000;
-  const audio=new Audio('music.wav');
+  const audio=new Audio('mix.wav');
   document.addEventListener('click',()=>{start=performance.now(); audio.currentTime=0; audio.play().catch(()=>{});});
-  (function loop(){const t=((performance.now()-start)/1000)%DUR; renderFrame(t); requestAnimationFrame(loop);})();
+  const ND=window.TIMEMAP?TIMEMAP.dur:DUR, M=window.mapT||(x=>x);
+  (function loop(){const t=((performance.now()-start)/1000)%ND; renderFrame(M(t)); requestAnimationFrame(loop);})();
 }
 </script>
 </body>

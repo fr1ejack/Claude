@@ -1,13 +1,13 @@
 # SDG 7 – Erklärvideo („Wie schaffen wir die globale Energiewende?“)
 
-Animiertes Erklärvideo (2:50 min, 1920×1080, 30 fps) im flachen Vektor-Stil mit runden Figuren.
+Animiertes Erklärvideo (ca. 2:00 min, 1920×1080, 30 fps, Voice-Over von drei Sprecher:innen) im flachen Vektor-Stil mit runden Figuren.
 
 - `sdg7-video.mp4` – fertiges Video mit Untertiteln und Hintergrundmusik
 - `animation.html` – die Animation (im Browser öffnen = Vorschau, Klick startet mit Musik, `?t=75` springt zu Sekunde 75)
 - `render.js` – rendert das Video neu: `node render.js video` (benötigt Playwright + ffmpeg)
 - `music.py` – erzeugt die Hintergrundmusik `music.wav`
 
-## Ablauf
+## Ablauf (Zeiten der ursprünglichen 2:50-Fassung; die Endfassung ist über `timemap.js` gestrafft)
 
 | Zeit | Szene |
 |---|---|
@@ -46,3 +46,10 @@ Animiertes Erklärvideo (2:50 min, 1920×1080, 30 fps) im flachen Vektor-Stil mi
 - **2:44** Jede Kilowattstunde zählt. SDG 7 – Energie für alle.
 
 Hinweis: Die Zahl „fast 700 Millionen“ (Menschen ohne Stromzugang) bezieht sich auf die Berichte der letzten Jahre (Tracking SDG 7) – vor der Abgabe kurz mit der aktuellen Zahl abgleichen.
+
+## Neu bauen
+
+1. `python3 voice/cut.py` – schneidet die Sätze, berechnet die gestraffte Zeitachse (`timemap.js/json`) und die Sprachspur
+2. `python3 music.py` – Musik passend zur Zeitachse
+3. Stimme + Musik mischen (`mix.wav`, mit ffmpeg sidechaincompress)
+4. `node render.js video`
