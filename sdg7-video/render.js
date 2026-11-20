@@ -64,7 +64,7 @@ async function video(fps = 30, scale = 1.5, workers = 4) {
   console.log('Frames gerendert in', ((Date.now() - t0) / 1000).toFixed(0), 's');
   fs.writeFileSync(path.join(tmp, 'list.txt'), files.map(f => `file '${f}'`).join('\n'));
   const args = ['-y', '-loglevel', 'error', '-f', 'concat', '-safe', '0', '-i', path.join(tmp, 'list.txt')];
-  const music = path.join(DIR, 'music.wav');
+  const music = fs.existsSync(path.join(DIR, 'mix.wav')) ? path.join(DIR, 'mix.wav') : path.join(DIR, 'music.wav');
   if (fs.existsSync(music)) args.push('-i', music, '-c:a', 'aac', '-b:a', '160k', '-shortest');
   args.push('-c:v', 'copy', '-movflags', '+faststart', path.join(DIR, 'sdg7-video.mp4'));
   await new Promise((res, rej) => spawn('ffmpeg', args, { stdio: 'inherit' }).on('close', c => c ? rej(c) : res()));
