@@ -1,0 +1,694 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>SDG 7 Erklärvideo</title>
+<style>
+@font-face{font-family:Nunito;font-weight:600;src:url(fonts/nunito-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:Nunito;font-weight:800;src:url(fonts/nunito-latin-800-normal.woff2) format('woff2')}
+@font-face{font-family:Nunito;font-weight:900;src:url(fonts/nunito-latin-900-normal.woff2) format('woff2')}
+html,body{margin:0;background:#111;overflow:hidden}
+#stage{position:relative;width:1280px;height:720px;overflow:hidden;font-family:Nunito,sans-serif}
+#svg{position:absolute;inset:0}
+#cap{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);max-width:1040px;text-align:center;
+  font:800 27px/1.3 Nunito,sans-serif;color:#FBF6EC;background:rgba(38,44,59,.82);padding:10px 24px;border-radius:18px;
+  transition:none;white-space:normal}
+#controls{position:absolute;top:730px;left:0;color:#ccc;font:14px sans-serif}
+</style>
+</head>
+<body>
+<div id="stage">
+  <svg id="svg" viewBox="0 0 1280 720" width="1280" height="720" xmlns="http://www.w3.org/2000/svg"></svg>
+  <div id="cap"></div>
+</div>
+<script>
+// ======================================================================
+//  SDG 7 – Erklärvideo. Jedes Bild wird aus der Zeit t (Sekunden) berechnet.
+// ======================================================================
+const DUR = 170;
+const O = '#2d3142';
+const C = {cream:'#EFE8D8', stripe:'#E7DFCC', teal:'#5E9C98', tealD:'#4A807C', navy:'#2F3E4C', skin:'#F3E3C6',
+  brown:'#6B4038', sage:'#8FAE8B', sageD:'#6F8F6B', peach:'#E8B795', yellow:'#FCC30B', mustard:'#D9A93A',
+  night:'#262C3B', grey:'#8A8F99', red:'#D2695C', white:'#FBF6EC', wood:'#C9A27E', woodD:'#A9825F', blue:'#6F93A8', green:'#6FA86A'};
+const SDG = ['#E5243B','#DDA63A','#4C9F38','#C5192D','#FF3A21','#26BDE2','#FCC30B','#A21942','#FD6925','#DD1367','#FD9D24','#BF8B2E','#3F7E44','#0A97D9','#56C02B','#00689D','#19486A'];
+
+const clamp=(v,a=0,b=1)=>Math.min(b,Math.max(a,v));
+const lerp=(a,b,k)=>a+(b-a)*k;
+const P=(t,a,b)=>clamp((t-a)/(b-a));
+const eio=x=>x<.5?2*x*x:1-Math.pow(-2*x+2,2)/2;
+const eout=x=>1-Math.pow(1-x,3);
+const back=x=>{const c1=1.70158,c3=c1+1;return 1+c3*Math.pow(x-1,3)+c1*Math.pow(x-1,2)};
+const pop=(t,a,d=.55)=>back(P(t,a,a+d));
+const rnd=i=>{const x=Math.sin(i*127.1+311.7)*43758.5453;return x-Math.floor(x)};
+const rad=a=>a*Math.PI/180;
+const f=n=>Math.round(n*10)/10;
+
+// ---------- Grundformen ----------
+function tube(pts,col,w=22){
+  const s=pts.map(q=>f(q[0])+','+f(q[1])).join(' ');
+  return `<polyline points="${s}" fill="none" stroke="${O}" stroke-width="${w+6}" stroke-linecap="round" stroke-linejoin="round"/>`+
+         `<polyline points="${s}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`;
+}
+function stripes(c1=C.cream,c2=C.stripe,y0=0,y1=720){
+  let s=`<rect x="0" y="${y0}" width="1280" height="${y1-y0}" fill="${c1}"/>`;
+  for(let x=20;x<1280;x+=72) s+=`<rect x="${x}" y="${y0}" width="34" height="${y1-y0}" fill="${c2}"/>`;
+  return s;
+}
+function txt(x,y,s,size=30,col=O,w=800,anchor='middle',extra=''){
+  return `<text x="${x}" y="${y}" font-family="Nunito" font-weight="${w}" font-size="${size}" fill="${col}" text-anchor="${anchor}" ${extra}>${s}</text>`;
+}
+function G(inner,tf='',op=1){return `<g transform="${tf}" opacity="${f(clamp(op))}">${inner}</g>`}
+function scaleAt(x,y,s){return `translate(${f(x)},${f(y)}) scale(${s.toFixed(4)}) translate(${-x},${-y})`}
+
+// ---------- Figur (weiche, runde Variante des Referenz-Stils) ----------
+function person(o){
+  const d=Object.assign({x:0,y:0,s:1,shirt:C.teal,pants:C.navy,hair:C.navy,skin:C.skin,style:'short',
+    armL:[12,-8],armR:[12,-8],blink:0,mouth:'smile',look:0,lookY:0,brow:0,walk:null,extra:'',front:'',bob:0,tie:null},o);
+  const r=rad;
+  function arm(side,[a1,a2]){
+    const sx=side*48, sy=-186, L=54;
+    const ex=sx+side*Math.sin(r(a1))*L, ey=sy+Math.cos(r(a1))*L;
+    const hx=ex+side*Math.sin(r(a1+a2))*L, hy=ey+Math.cos(r(a1+a2))*L;
+    return tube([[sx,sy],[ex,ey],[hx,hy]],d.shirt,22)+`<circle cx="${f(hx)}" cy="${f(hy)}" r="12" fill="${d.skin}" stroke="${O}" stroke-width="3"/>`;
+  }
+  let legA=0; if(d.walk!==null) legA=Math.sin(d.walk)*22;
+  function leg(side,a){
+    const hx=side*22, hy=-84, L=74;
+    const fx=hx+Math.sin(r(a))*L, fy=hy+Math.cos(r(a))*L;
+    return tube([[hx,hy],[fx,fy]],d.pants,26)+`<ellipse cx="${f(fx+side*4)}" cy="${f(fy+4)}" rx="21" ry="10" fill="${O}"/>`;
+  }
+  let s='';
+  s+=leg(-1,legA)+leg(1,-legA);
+  // Haare hinten
+  if(d.style==='bun') s+=`<circle cx="-60" cy="-236" r="22" fill="${d.hair}" stroke="${O}" stroke-width="3"/>`;
+  if(d.style==='long') s+=`<rect x="-70" y="-300" width="140" height="120" rx="34" fill="${d.hair}" stroke="${O}" stroke-width="3"/>`;
+  // Oberkörper
+  s+=`<rect x="-52" y="-204" width="104" height="130" rx="36" fill="${d.shirt}" stroke="${O}" stroke-width="3"/>`;
+  s+=`<path d="M-16 -203 L0 -186 L16 -203" fill="none" stroke="${O}" stroke-width="3" stroke-linejoin="round"/>`;
+  if(d.tie) s+=`<path d="M0 -186 l-6 8 l6 26 l6 -26 z" fill="${d.tie}" stroke="${O}" stroke-width="2"/>`;
+  s+=d.front;
+  s+=arm(-1,d.armL)+arm(1,d.armR);
+  // Hals + Kopf
+  s+=`<rect x="-12" y="-214" width="24" height="16" fill="${d.skin}" stroke="${O}" stroke-width="3"/>`;
+  s+=`<circle cx="-64" cy="-254" r="12" fill="${d.skin}" stroke="${O}" stroke-width="3"/><circle cx="64" cy="-254" r="12" fill="${d.skin}" stroke="${O}" stroke-width="3"/>`;
+  s+=`<rect x="-64" y="-320" width="128" height="114" rx="48" fill="${d.skin}"/>`;
+  // Haarkappe
+  if(d.style==='short') s+=`<path d="M-64 -258 L-64 -274 Q-64 -320 -16 -320 L16 -320 Q64 -320 64 -274 L64 -262 Q56 -290 22 -290 Q2 -282 -18 -294 Q-50 -292 -64 -258 Z" fill="${d.hair}"/>`;
+  else s+=`<path d="M-64 -250 L-64 -274 Q-64 -320 -16 -320 L16 -320 Q64 -320 64 -274 L64 -250 Q58 -282 34 -290 Q6 -298 -8 -286 Q-30 -296 -50 -284 Q-62 -270 -64 -250 Z" fill="${d.hair}"/>`;
+  s+=`<rect x="-64" y="-320" width="128" height="114" rx="48" fill="none" stroke="${O}" stroke-width="3"/>`;
+  if(d.style==='bun') s+=`<circle cx="34" cy="-292" r="6" fill="${C.white}" stroke="${O}" stroke-width="1.5"/><circle cx="44" cy="-287" r="5" fill="${C.peach}" stroke="${O}" stroke-width="1.5"/>`;
+  // Gesicht
+  const ey=-250+d.lookY*3, bl=d.blink?1.2:11;
+  for(const sd of [-1,1]){
+    const cx=sd*25;
+    s+=`<ellipse cx="${cx}" cy="${ey}" rx="13" ry="${bl}" fill="${C.white}" stroke="${O}" stroke-width="2.2"/>`;
+    if(!d.blink) s+=`<circle cx="${f(cx+d.look*4)}" cy="${f(ey+d.lookY*2)}" r="5.6" fill="${O}"/>`;
+    const inner=-272-d.brow*5, outer=-272+d.brow*1;
+    s+=`<path d="M${sd*14} ${inner} L${sd*36} ${outer}" stroke="${O}" stroke-width="3.2" stroke-linecap="round"/>`;
+  }
+  s+=`<path d="M3 -244 l-6 9 l6 2" fill="none" stroke="#9b8b7a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>`;
+  const m={smile:'M-14 -222 Q0 -211 14 -222',big:'M-16 -224 Q0 -204 16 -224 Z',flat:'M-12 -219 L12 -219',sad:'M-13 -215 Q0 -225 13 -215',o:''}[d.mouth];
+  if(d.mouth==='o') s+=`<ellipse cx="0" cy="-219" rx="6" ry="8" fill="${O}"/>`;
+  else if(d.mouth==='big') s+=`<path d="${m}" fill="${O}" stroke="${O}" stroke-width="2.6" stroke-linejoin="round"/>`;
+  else s+=`<path d="${m}" fill="none" stroke="${O}" stroke-width="3" stroke-linecap="round"/>`;
+  s+=d.extra;
+  return `<g transform="translate(${f(d.x)},${f(d.y+d.bob)}) scale(${d.s})">${s}</g>`;
+}
+const blinkAt=(t,seed=0)=>((t+seed*1.7)%3.7)<0.12;
+
+// ---------- Weltkugel ----------
+function globe(cx,cy,r,t,id,tint=0){
+  const off=(t*18)%400;
+  let land='';
+  for(const k of [0,400]){
+    const x=cx-r-off+k;
+    land+=`<g transform="translate(${f(x)},${cy-r})">`+
+      `<path d="M20 70 q30 -40 70 -20 q30 10 20 50 q-10 40 -40 50 q-30 0 -40 -30 q-20 -20 -10 -50z" fill="${C.sage}"/>`+
+      `<path d="M150 40 q40 -20 80 10 q20 30 -10 50 q-20 20 -10 60 q0 40 -30 50 q-30 -20 -20 -70 q-30 -20 -10 -100z" fill="${C.sage}"/>`+
+      `<path d="M270 150 q30 -10 50 20 q10 30 -20 40 q-30 0 -30 -60z" fill="${C.sage}"/>`+
+      `<path d="M300 40 q40 0 60 30 q0 30 -40 30 q-30 -20 -20 -60z" fill="${C.sage}"/>`+
+      `<path d="M60 190 q30 0 40 30 q-10 40 -30 50 q-20 -30 -10 -80z" fill="${C.sage}"/>`+
+      `</g>`;
+  }
+  return `<defs><clipPath id="${id}"><circle cx="${cx}" cy="${cy}" r="${r}"/></clipPath></defs>`+
+    `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${C.blue}"/>`+
+    `<g clip-path="url(#${id})">${land}<circle cx="${cx}" cy="${cy}" r="${r}" fill="#C8553D" opacity="${f(tint*0.45)}"/>`+
+    `<path d="M${cx-r} ${cy-r*0.2} a${r} ${r} 0 0 0 ${2*r} 0 v${r*1.3} h${-2*r}z" fill="#000" opacity=".08"/></g>`+
+    `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${O}" stroke-width="3"/>`+
+    `<path d="M${cx-r*0.55} ${cy-r*0.62} q${r*0.25} ${-r*0.18} ${r*0.5} ${-r*0.16}" stroke="#fff" stroke-width="6" fill="none" stroke-linecap="round" opacity=".45"/>`;
+}
+
+// ---------- SDG-7-Kachel (eigene, vereinfachte Darstellung) ----------
+function sdgTile(t,t0,size=300){
+  const k=size/300;
+  const draw=P(t,t0+0.4,t0+1.6);
+  const typ=P(t,t0+0.9,t0+2.2);
+  const l1='BEZAHLBARE UND', l2='SAUBERE ENERGIE';
+  const n=Math.round(typ*(l1.length+l2.length));
+  const s1=l1.slice(0,Math.min(n,l1.length)), s2=l2.slice(0,Math.max(0,n-l1.length));
+  let rays='';
+  const rot=t*12;
+  for(let i=0;i<12;i++){
+    const a=rad(i*30+rot), on=draw>i/12;
+    if(!on) continue;
+    rays+=`<line x1="${f(150+Math.cos(a)*62)}" y1="${f(200+Math.sin(a)*62)}" x2="${f(150+Math.cos(a)*80)}" y2="${f(200+Math.sin(a)*80)}" stroke="#fff" stroke-width="9" stroke-linecap="round"/>`;
+  }
+  const circ=2*Math.PI*44*0.84;
+  return `<g transform="scale(${k})">`+
+    `<rect x="0" y="0" width="300" height="300" rx="34" fill="${C.yellow}" stroke="${O}" stroke-width="3"/>`+
+    txt(24,110,'7',118,'#fff',900,'start')+
+    txt(100,52,s1,19,'#fff',900,'start')+txt(100,78,s2,19,'#fff',900,'start')+
+    rays+
+    `<circle cx="150" cy="200" r="44" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round" stroke-dasharray="${f(circ*draw)} 999" transform="rotate(-60 150 200)"/>`+
+    `<line x1="150" y1="168" x2="150" y2="${f(168+34*draw)}" stroke="#fff" stroke-width="10" stroke-linecap="round"/>`+
+    `</g>`;
+}
+
+// ---------- Stadt ----------
+const BUILD=[[30,150,250],[190,120,330],[320,160,210],[490,110,380],[610,150,270],[770,120,350],[900,170,230],[1080,170,300]];
+function city(t,litFn,dark=false){
+  let s='';
+  BUILD.forEach(([x,w,h],bi)=>{
+    const top=600-h, col=['#3A4256','#424B61','#353C4E'][bi%3];
+    s+=`<rect x="${x}" y="${top}" width="${w}" height="${h+20}" rx="16" fill="${col}" stroke="${O}" stroke-width="3"/>`;
+    let wi=0;
+    for(let yy=top+26; yy<580; yy+=44){
+      for(let xx=x+20; xx<x+w-30; xx+=34){
+        const id=bi*100+wi++;
+        const lit=litFn(id);
+        s+=`<rect x="${xx}" y="${yy}" width="20" height="26" rx="6" fill="${lit>0?'#F6D77A':'#2A3040'}" opacity="${lit>0?f(0.35+0.65*lit):1}"/>`;
+      }
+    }
+  });
+  s+=`<rect x="0" y="600" width="1280" height="120" fill="#20242F"/>`;
+  return s;
+}
+
+// ======================================================================
+//  SZENEN
+// ======================================================================
+
+// 0:00–0:05 Handy wird geladen
+function sPhone(t){
+  const lt=t; const z=1+0.04*P(t,0,5);
+  const charge=lerp(0.18,1,eio(P(t,0.6,4.2)));
+  const bc=charge<0.4?C.red:(charge<0.75?C.mustard:C.green);
+  let s=stripes()+`<rect x="0" y="520" width="1280" height="200" fill="${C.wood}" stroke="${O}" stroke-width="3"/><rect x="0" y="545" width="1280" height="10" fill="${C.woodD}"/>`;
+  // Steckdose
+  s+=`<rect x="960" y="330" width="110" height="110" rx="26" fill="${C.white}" stroke="${O}" stroke-width="3"/><circle cx="1015" cy="385" r="34" fill="#E9E2D2" stroke="${O}" stroke-width="2"/>`;
+  s+=`<rect x="992" y="368" width="46" height="34" rx="10" fill="#DDD5C2" stroke="${O}" stroke-width="3"/>`;
+  // Kabel
+  s+=`<path d="M1015 402 C1015 520 760 560 680 520" fill="none" stroke="${O}" stroke-width="10" stroke-linecap="round"/><path d="M1015 402 C1015 520 760 560 680 520" fill="none" stroke="#F4EFE3" stroke-width="5" stroke-linecap="round"/>`;
+  // Handy auf Ständer
+  s+=`<path d="M560 520 l30 -30 h140 l30 30z" fill="${C.navy}" stroke="${O}" stroke-width="3"/>`;
+  s+=`<rect x="570" y="200" width="180" height="310" rx="30" fill="${C.navy}" stroke="${O}" stroke-width="3"/><rect x="584" y="216" width="152" height="278" rx="20" fill="#3E5368"/>`;
+  s+=`<rect x="630" y="226" width="60" height="8" rx="4" fill="${C.navy}"/>`;
+  // Akku
+  s+=`<rect x="610" y="300" width="96" height="150" rx="18" fill="none" stroke="#fff" stroke-width="6"/><rect x="640" y="288" width="36" height="12" rx="4" fill="#fff"/>`;
+  const fh=134*charge;
+  s+=`<rect x="618" y="${f(442-fh)}" width="80" height="${f(fh)}" rx="11" fill="${bc}"/>`;
+  s+=`<path d="M664 330 l-22 46 h18 l-8 40 l28 -52 h-18 l10 -34z" fill="#fff" stroke="${O}" stroke-width="2" stroke-linejoin="round" opacity="${0.6+0.4*Math.sin(t*6)}"/>`;
+  s+=txt(658,480,Math.round(charge*100)+' %',26,'#fff',900);
+  // Figur
+  s+=person({x:300,y:600,s:0.95,shirt:C.peach,hair:C.brown,style:'bun',look:1.6,blink:blinkAt(t,1),
+    armR:[30,-60],armL:[10,-6],mouth:charge>0.9?'big':'smile',bob:Math.sin(t*3)*2});
+  return G(s,scaleAt(640,400,z));
+}
+
+// 0:05–0:10 Zug fährt vorbei
+function sTrain(t){
+  const lt=t-5;
+  let s=`<rect width="1280" height="720" fill="#E9E1CC"/>`;
+  s+=`<circle cx="1000" cy="170" r="70" fill="${C.peach}" opacity=".9"/>`;
+  // Wolken
+  for(let i=0;i<3;i++){const cx=((200+i*420)-lt*20)%1400; s+=`<g opacity=".9"><ellipse cx="${f(cx)}" cy="${120+i*30}" rx="70" ry="24" fill="#F6F1E4"/><ellipse cx="${f(cx+40)}" cy="${105+i*30}" rx="40" ry="24" fill="#F6F1E4"/></g>`;}
+  s+=`<path d="M0 420 Q200 330 420 400 T860 380 T1280 400 V720 H0z" fill="${C.sage}" stroke="${O}" stroke-width="3"/>`;
+  s+=`<path d="M0 480 Q260 430 520 470 T1280 460 V720 H0z" fill="${C.sageD}" stroke="${O}" stroke-width="3"/>`;
+  // Oberleitung
+  s+=`<line x1="0" y1="300" x2="1280" y2="300" stroke="${O}" stroke-width="3"/>`;
+  for(let i=0;i<4;i++){const px=((i*380)-lt*60)%1520+80; s+=`<rect x="${f(px)}" y="290" width="12" height="290" fill="${C.navy}" stroke="${O}" stroke-width="2"/><rect x="${f(px-30)}" y="290" width="50" height="10" fill="${C.navy}"/>`;}
+  s+=`<rect x="0" y="575" width="1280" height="16" fill="${C.navy}"/><rect x="0" y="591" width="1280" height="130" fill="#B9A98C" stroke="${O}" stroke-width="3"/>`;
+  for(let x=-40;x<1320;x+=46){s+=`<rect x="${f(x-((lt*600)%46))}" y="591" width="20" height="10" fill="#8F7F66"/>`;}
+  // Zug
+  const tx=lerp(1350,-1750,eio(P(lt,0.3,4.6)));
+  let tr='';
+  for(let c=0;c<3;c++){
+    const x=tx+c*330;
+    const nose=c===0;
+    tr+= nose ? `<path d="M${x+60} 420 h260 v150 h-310 q-20 0 -20 -24 q0 -70 70 -126z" fill="${C.teal}" stroke="${O}" stroke-width="3"/>`
+              : `<rect x="${x}" y="420" width="320" height="150" rx="26" fill="${C.teal}" stroke="${O}" stroke-width="3"/>`;
+    tr+=`<rect x="${x+(nose?60:20)}" y="440" width="${nose?240:280}" height="54" rx="16" fill="${C.white}" stroke="${O}" stroke-width="3"/>`;
+    for(let wv=0; wv<(nose?3:4); wv++){const wx=x+(nose?110:40)+wv*66; tr+=`<line x1="${wx+40}" y1="442" x2="${wx+40}" y2="492" stroke="${O}" stroke-width="3"/>`;
+      tr+=`<circle cx="${wx+12}" cy="470" r="12" fill="${['#6B4038','#2F3E4C','#D9A93A'][(wv+c)%3]}"/>`;}
+    tr+=`<rect x="${x}" y="520" width="320" height="12" fill="${C.tealD}"/>`;
+    for(const wx of [50,110,210,270]) tr+=`<circle cx="${x+wx}" cy="572" r="16" fill="${O}"/><circle cx="${x+wx}" cy="572" r="6" fill="${C.grey}"/>`;
+  }
+  // Stromabnehmer
+  tr+=`<path d="M${tx+150} 420 l40 -60 l-40 -60 M${tx+120} 300 h80" fill="none" stroke="${O}" stroke-width="5" stroke-linejoin="round"/>`;
+  if(Math.sin(lt*40)>0.3) tr+=`<path d="M${tx+160} 296 l10 -14 l4 10 l10 -12" stroke="${C.yellow}" stroke-width="4" fill="none"/>`;
+  // Speed-Linien
+  for(let i=0;i<5;i++) tr+=`<line x1="${tx+1000+i*20}" y1="${440+i*25}" x2="${tx+1100+i*40}" y2="${440+i*25}" stroke="${O}" stroke-width="3" stroke-linecap="round" opacity=".35"/>`;
+  s+=tr;
+  return s;
+}
+
+// 0:10–0:15 Stadtlichter gehen an
+function sCity(t){
+  const lt=t-10;
+  let s=`<rect width="1280" height="720" fill="${C.night}"/>`;
+  for(let i=0;i<60;i++){const tw=0.4+0.6*Math.abs(Math.sin(t*2+i)); s+=`<circle cx="${f(rnd(i)*1280)}" cy="${f(rnd(i+99)*300)}" r="${f(1+rnd(i+7)*2)}" fill="#F6EFD9" opacity="${f(tw)}"/>`;}
+  s+=`<circle cx="1100" cy="110" r="44" fill="#F3E7C4"/><circle cx="1122" cy="96" r="40" fill="${C.night}"/>`;
+  s+=city(t,id=>clamp((lt-0.3-rnd(id)*3.8)/0.25));
+  for(let i=0;i<6;i++){const x=100+i*220,on=lt>1+i*0.5;
+    s+=`<rect x="${x}" y="560" width="8" height="70" fill="${C.navy}"/><circle cx="${x+4}" cy="556" r="12" fill="${on?'#F6D77A':'#4A5163'}" stroke="${O}" stroke-width="2"/>`;
+    if(on) s+=`<circle cx="${x+4}" cy="556" r="40" fill="#F6D77A" opacity=".18"/>`;}
+  return G(s,scaleAt(640,360,1.06-0.06*P(lt,0,5)));
+}
+
+// 0:15–0:20 Blackout – nur eine Kerze
+function sBlackout(t){
+  const lt=t-15;
+  let s=`<rect width="1280" height="720" fill="${C.night}"/>`;
+  const off=lt>0.9;
+  if(lt<1.6){
+    const flick=lt<0.9?(lt>0.45&&Math.sin(lt*70)>0?0.15:1):0;
+    let c=city(t,id=>flick);
+    s+=G(c,'',1);
+  }
+  s+=`<rect width="1280" height="720" fill="#0E1016" opacity="${f(P(lt,0.9,1.0)*0.85+P(lt,1.3,2.0)*0.15)}"/>`;
+  // Kerze
+  const ca=P(lt,2.0,3.0);
+  if(ca>0){
+    const fl=1+0.08*Math.sin(t*23)+0.05*Math.sin(t*37), sw=3*Math.sin(t*9);
+    let k=`<defs><radialGradient id="glow"><stop offset="0" stop-color="#F9C66A" stop-opacity=".55"/><stop offset="1" stop-color="#F9C66A" stop-opacity="0"/></radialGradient></defs>`;
+    k+=`<circle cx="640" cy="370" r="${f(220*fl)}" fill="url(#glow)"/>`;
+    k+=`<ellipse cx="640" cy="560" rx="90" ry="16" fill="#1c1f29"/>`;
+    k+=`<rect x="600" y="410" width="80" height="150" rx="14" fill="#F1E6CF" stroke="${O}" stroke-width="3"/>`;
+    k+=`<path d="M610 420 q10 30 0 50" stroke="#E2D4B5" stroke-width="8" fill="none" stroke-linecap="round"/>`;
+    k+=`<line x1="640" y1="410" x2="640" y2="392" stroke="${O}" stroke-width="4"/>`;
+    k+=`<g transform="translate(640 395) scale(${f(fl)},${f(fl*1.05)}) skewX(${f(sw)})"><path d="M0 0 C-22 -10 -16 -40 0 -70 C16 -40 22 -10 0 0z" fill="#F8B84E"/><path d="M0 -4 C-10 -10 -8 -26 0 -44 C8 -26 10 -10 0 -4z" fill="#FBE7A1"/></g>`;
+    s+=G(k,'',ca);
+  }
+  return s;
+}
+
+// 0:20–0:45 Intro mit SDG-7-Kachel + 17 Ziele
+function sIntro(t){
+  const lt=t-20;
+  let s=stripes();
+  const mv=eio(P(lt,12,13.4));
+  const sc=pop(t,21)*lerp(1,0.55,mv);
+  const tx=lerp(640,190,mv), ty=lerp(330,190,mv);
+  // 17 Ziele um die Erde
+  if(lt>12.4){
+    const gx=780, gy=370, R1=150, R2=205;
+    let g=globe(gx,gy,130,t,'gi');
+    const hi=P(lt,18.5,19.3);
+    for(let i=0;i<17;i++){
+      const ap=pop(t,33+i*0.22,0.4);
+      if(ap<=0) continue;
+      const a0=rad(-90+i*360/17+1.2), a1=rad(-90+(i+1)*360/17-1.2);
+      const ext=(i===6?hi*26:0), rr1=R1+ext, rr2=R2*ap+ext;
+      const pth=`M${f(gx+Math.cos(a0)*rr1)} ${f(gy+Math.sin(a0)*rr1)} L${f(gx+Math.cos(a0)*rr2)} ${f(gy+Math.sin(a0)*rr2)} A${f(rr2)} ${f(rr2)} 0 0 1 ${f(gx+Math.cos(a1)*rr2)} ${f(gy+Math.sin(a1)*rr2)} L${f(gx+Math.cos(a1)*rr1)} ${f(gy+Math.sin(a1)*rr1)} A${rr1} ${rr1} 0 0 0 ${f(gx+Math.cos(a0)*rr1)} ${f(gy+Math.sin(a0)*rr1)}Z`;
+      const am=(a0+a1)/2;
+      g+=`<path d="${pth}" fill="${SDG[i]}" stroke="${O}" stroke-width="2.5" opacity="${i===6?1:f(1-hi*0.45)}"/>`;
+      if(ap>0.8) g+=txt(f(gx+Math.cos(am)*(R1+28+ext)),f(gy+Math.sin(am)*(R1+28+ext)+8),i+1,22,'#fff',900);
+    }
+    if(hi>0){
+      const am=rad(-90+6.5*360/17);
+      const lx=gx+Math.cos(am)*250, ly=gy+Math.sin(am)*250;
+      g+=G(`<line x1="${f(gx+Math.cos(am)*236)}" y1="${f(gy+Math.sin(am)*236)}" x2="${f(lx+70)}" y2="${f(ly-24)}" stroke="${O}" stroke-width="3"/>`+
+        `<rect x="${f(lx+70)}" y="${f(ly-50)}" width="150" height="52" rx="26" fill="${C.yellow}" stroke="${O}" stroke-width="3"/>`+txt(f(lx+145),f(ly-14),'Ziel 7',28,O,900),'',hi);
+    }
+    s+=G(g,scaleAt(gx,gy,eout(P(lt,12.4,13.4))));
+    s+=G(txt(1110,90,'17 Ziele',40,O,900)+txt(1110,124,'für nachhaltige',24,O,700)+txt(1110,152,'Entwicklung',24,O,700)+
+         `<rect x="1040" y="176" width="140" height="42" rx="21" fill="${C.teal}" stroke="${O}" stroke-width="3"/>`+txt(1110,205,'bis 2030',22,'#fff',900),'',P(lt,14,15));
+  }
+  s+=G(sdgTile(t,21),`translate(${f(tx)},${f(ty)}) scale(${sc.toFixed(4)}) translate(-150,-150)`);
+  // Untertitel unter der Kachel
+  s+=G(txt(640,560,'Bezahlbare und saubere Energie',38,O,900),'',P(lt,3,4)*(1-P(lt,11.5,12.2)));
+  // kleine Figuren winken
+  if(lt<12.2){
+    const a=P(lt,4,5)*(1-P(lt,11.5,12.2));
+    const w=Math.sin(t*7)*25;
+    s+=G(person({x:220,y:700,s:0.8,shirt:C.teal,armR:[150,w-20],mouth:'big',look:1,blink:blinkAt(t,2)})+
+         person({x:1060,y:700,s:0.8,shirt:C.mustard,hair:C.brown,style:'bun',armL:[150,-w-20],mouth:'big',look:-1,blink:blinkAt(t,3)}),
+         `translate(0,${f((1-eout(a))*300)})`,a);
+  }
+  return s;
+}
+
+// 0:45–1:00 Kohlekraftwerk + Treibhauseffekt
+function sCoal(t){
+  const lt=t-45;
+  const warm=P(lt,8,15);
+  let s=`<rect width="1280" height="720" fill="${C.cream}"/>`;
+  s+=`<rect width="1280" height="720" fill="#C8553D" opacity="${f(warm*0.12)}"/>`;
+  s+=`<path d="M0 560 Q320 520 640 560 T1280 550 V720 H0z" fill="${C.sage}" stroke="${O}" stroke-width="3"/>`;
+  // Kraftwerk
+  s+=`<path d="M60 560 Q90 450 70 360 H210 Q190 450 220 560z" fill="#B8B0A0" stroke="${O}" stroke-width="3"/>`;
+  s+=`<rect x="230" y="420" width="220" height="140" rx="14" fill="#9E9686" stroke="${O}" stroke-width="3"/>`;
+  for(let i=0;i<4;i++) s+=`<rect x="${250+i*50}" y="450" width="30" height="40" rx="8" fill="#F6D77A" stroke="${O}" stroke-width="2"/>`;
+  s+=`<rect x="300" y="240" width="40" height="180" fill="${C.red}" stroke="${O}" stroke-width="3"/><rect x="300" y="280" width="40" height="22" fill="${C.white}"/><rect x="300" y="340" width="40" height="22" fill="${C.white}"/>`;
+  s+=`<rect x="380" y="280" width="36" height="140" fill="${C.red}" stroke="${O}" stroke-width="3"/><rect x="380" y="320" width="36" height="20" fill="${C.white}"/>`;
+  s+=`<rect x="40" y="60" width="250" height="56" rx="28" fill="${C.white}" stroke="${O}" stroke-width="3"/>`+txt(165,97,'Kohle · Öl · Gas',26,O,900);
+  // Erde
+  const ex=960, ey=320;
+  s+=globe(ex,ey,120,t,'gc',warm);
+  // Rauch
+  for(let i=0;i<34;i++){
+    const birth=0.4+i*0.36, age=lt-birth;
+    if(age<0) continue;
+    const src=i%2?[320,240]:[398,280];
+    const fly=clamp(age/3.2);
+    const ang=rad(-200+ (i*47)%360 + age*20);
+    const orR=165+rnd(i)*35;
+    const tgx=ex+Math.cos(ang)*orR, tgy=ey+Math.sin(ang)*orR;
+    const mx=lerp(src[0],ex-100,0.5), my=Math.min(src[1],tgy)-140;
+    const u=eio(fly);
+    const x=(1-u)*(1-u)*src[0]+2*(1-u)*u*mx+u*u*tgx;
+    const y=(1-u)*(1-u)*src[1]+2*(1-u)*u*my+u*u*tgy;
+    const r=lerp(12,20+rnd(i+3)*8,clamp(age/2));
+    s+=`<circle cx="${f(x)}" cy="${f(y)}" r="${f(r)}" fill="${['#5D6170','#6E7280','#4F5361'][i%3]}" opacity="${f(0.85*clamp(age*3))}" stroke="${O}" stroke-width="2"/>`;
+  }
+  // Labels
+  s+=G(`<rect x="640" y="110" width="110" height="56" rx="28" fill="${C.white}" stroke="${O}" stroke-width="3"/>`+txt(695,148,'CO₂',30,O,900),'',P(lt,4,4.6));
+  s+=G(`<rect x="830" y="525" width="260" height="56" rx="28" fill="${C.white}" stroke="${O}" stroke-width="3"/>`+txt(960,562,'Treibhauseffekt',28,O,900),'',P(lt,8,8.6));
+  // Thermometer
+  const th=G(`<rect x="1140" y="200" width="40" height="230" rx="20" fill="${C.white}" stroke="${O}" stroke-width="3"/><circle cx="1160" cy="440" r="34" fill="${C.red}" stroke="${O}" stroke-width="3"/>`+
+    `<rect x="1150" y="${f(400-160*warm)}" width="20" height="${f(50+160*warm)}" rx="10" fill="${C.red}"/>`,'',P(lt,8,8.6));
+  s+=th;
+  return s;
+}
+
+// 1:00–1:07 Energie wird teurer
+function sPrice(t){
+  const lt=t-60;
+  let s=stripes();
+  // Diagramm
+  const g=eio(P(lt,0.6,3.2));
+  let pts=[];for(let i=0;i<=20;i++){const u=i/20; if(u>g) break; pts.push([700+u*460, 520-Math.pow(u,1.8)*300-Math.sin(u*14)*12]);}
+  s+=`<line x1="690" y1="540" x2="1180" y2="540" stroke="${O}" stroke-width="4" stroke-linecap="round"/><line x1="700" y1="550" x2="700" y2="180" stroke="${O}" stroke-width="4" stroke-linecap="round"/>`;
+  if(pts.length>1){
+    s+=`<polyline points="${pts.map(q=>f(q[0])+','+f(q[1])).join(' ')}" fill="none" stroke="${C.red}" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>`;
+    const L=pts[pts.length-1], Q=pts[pts.length-2]; const a=Math.atan2(L[1]-Q[1],L[0]-Q[0])*180/Math.PI;
+    s+=`<path d="M0 -16 L26 0 L0 16z" transform="translate(${f(L[0])},${f(L[1])}) rotate(${f(a)})" fill="${C.red}" stroke="${O}" stroke-width="2"/>`;
+  }
+  // Preisschild schwingt herein
+  const tp=pop(t,61.5,0.7);
+  const sw=Math.sin(lt*4)*8*Math.exp(-(lt-1.5)*0.7);
+  const ty=lerp(-250,250,tp)-g*40;
+  s+=`<g transform="translate(860,${f(ty)}) rotate(${f(sw-12)})">`+
+     `<line x1="0" y1="-300" x2="0" y2="-40" stroke="${O}" stroke-width="3"/>`+
+     `<path d="M-70 -40 L0 -80 L70 -40 V100 Q70 120 50 120 H-50 Q-70 120 -70 100Z" fill="${C.yellow}" stroke="${O}" stroke-width="3" stroke-linejoin="round"/>`+
+     `<circle cx="0" cy="-48" r="10" fill="${C.cream}" stroke="${O}" stroke-width="3"/>`+
+     txt(0,50,'€',84,O,900)+`<path d="M-30 96 h60" stroke="${O}" stroke-width="4" stroke-linecap="round"/></g>`;
+  // Figur mit Stromrechnung
+  const paper=`<g transform="translate(0,-140)"><rect x="-40" y="-60" width="80" height="100" rx="8" fill="#fff" stroke="${O}" stroke-width="3"/>`+
+     `<line x1="-26" y1="-38" x2="26" y2="-38" stroke="${O}" stroke-width="3"/><line x1="-26" y1="-22" x2="14" y2="-22" stroke="${O}" stroke-width="3"/>`+txt(0,24,'€€€',24,C.red,900)+`</g>`;
+  s+=person({x:350,y:640,s:1.1,shirt:C.mustard,hair:C.navy,armL:[20,-110],armR:[20,-110],extra:paper,mouth:lt>2?'o':'flat',brow:lt>2?1:0,lookY:1,blink:blinkAt(t,4)});
+  if(lt>2.4){const k=pop(t,62.4,0.4); s+=G(`<path d="M480 250 l14 -40 l14 40" stroke="${C.red}" stroke-width="6" fill="none" stroke-linecap="round"/><path d="M520 270 l10 -26 l10 26" stroke="${C.red}" stroke-width="5" fill="none" stroke-linecap="round"/>`,scaleAt(500,250,k));}
+  return s;
+}
+
+// 1:07–1:15 Titelfrage
+function sQuestion(t){
+  const lt=t-67;
+  let s=stripes();
+  const q=pop(t,67.4,0.6);
+  s+=G(txt(640,150,'Wie schaffen wir die',52,O,900)+txt(640,215,'globale Energiewende?',60,C.tealD,900),scaleAt(640,180,q),P(lt,0.3,0.6));
+  s+=globe(640,470,110,t,'gq');
+  // Figuren denken
+  s+=person({x:300,y:700,s:0.9,shirt:C.teal,armR:[170,-40],armL:[12,-8],mouth:'flat',brow:1,look:1,lookY:-1,blink:blinkAt(t,5)});
+  s+=person({x:980,y:700,s:0.9,shirt:C.peach,hair:C.brown,style:'long',armL:[30,-120],armR:[30,-120],mouth:'smile',look:-1,lookY:-1,blink:blinkAt(t,6)});
+  for(let i=0;i<3;i++){const k=pop(t,68.4+i*0.6,0.5),bob=Math.sin(t*3+i)*6; s+=G(txt(0,0,'?',60,[C.yellow,C.teal,C.red][i],900,'middle',`stroke="${O}" stroke-width="2"`),`translate(${[420,860,520][i]},${[330+bob,320+bob,290+bob][i]}) scale(${k.toFixed(3)})`);}
+  return s;
+}
+
+// 1:15–2:00 Die drei Kernziele
+function card(x,y,n,title,t,t0,inner,active){
+  const k=pop(t,t0,0.6);
+  if(k<=0) return '';
+  const lift=active?-10:0;
+  let s=`<rect x="0" y="0" width="350" height="430" rx="30" fill="#F8F3E8" stroke="${active?C.mustard:O}" stroke-width="${active?6:3}"/>`;
+  s+=`<circle cx="44" cy="44" r="28" fill="${C.yellow}" stroke="${O}" stroke-width="3"/>`+txt(44,55,n,30,O,900);
+  s+=inner;
+  s+=txt(175,400,title,28,O,900);
+  return `<g transform="translate(${x+175},${y+215+lift}) scale(${k.toFixed(4)}) translate(-175,-215)">${s}</g>`;
+}
+function sGoals(t){
+  const lt=t-75;
+  let s=stripes();
+  s+=G(txt(640,96,'Die 3 Kernziele von SDG 7',48,O,900),scaleAt(640,80,pop(t,75.4)));
+  const act=t<92?1:(t<106?2:3);
+  // Karte 1: Zugang für alle
+  let c1='';
+  const plug=eio(P(t,80.6,81.6));
+  c1+=`<rect x="105" y="80" width="140" height="140" rx="34" fill="${C.white}" stroke="${O}" stroke-width="3"/><circle cx="175" cy="150" r="46" fill="#E9E2D2" stroke="${O}" stroke-width="2"/><circle cx="158" cy="150" r="8" fill="${O}"/><circle cx="192" cy="150" r="8" fill="${O}"/>`;
+  const py=lerp(330,182,plug);
+  c1+=`<path d="M175 ${f(py+40)} V340" stroke="${O}" stroke-width="12" stroke-linecap="round"/><rect x="145" y="${f(py)}" width="60" height="50" rx="14" fill="${C.navy}" stroke="${O}" stroke-width="3"/>`;
+  const ck=pop(t,82,0.5);
+  c1+=G(`<circle cx="0" cy="0" r="30" fill="${C.green}" stroke="${O}" stroke-width="3"/><path d="M-13 1 l9 10 l17 -20" stroke="#fff" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,`translate(250,90) scale(${ck.toFixed(3)})`);
+  for(let i=0;i<4;i++){const hx=40+i*72, lit=t>83.5+i*0.8;
+    c1+=`<path d="M${hx} 330 v-34 l28 -22 l28 22 v34z" fill="${C.peach}" stroke="${O}" stroke-width="3" stroke-linejoin="round"/><rect x="${hx+18}" y="302" width="20" height="18" rx="4" fill="${lit?'#F6D77A':'#7B8090'}" stroke="${O}" stroke-width="2"/>`;
+    if(lit) c1+=`<circle cx="${hx+28}" cy="311" r="22" fill="#F6D77A" opacity=".3"/>`;}
+  s+=card(60,150,1,'Zugang für alle',t,78.6,c1,act===1);
+  // Karte 2: Erneuerbare
+  let c2='';
+  const wk=pop(t,93,0.6), sk=pop(t,95.5,0.6);
+  let w=`<path d="M-8 0 L-4 -170 h8 L8 0z" fill="${C.white}" stroke="${O}" stroke-width="3"/>`;
+  const ang=t*160;
+  for(let b=0;b<3;b++) w+=`<path d="M0 0 C10 -20 8 -80 0 -100 C-8 -80 -10 -20 0 0z" fill="${C.white}" stroke="${O}" stroke-width="3" transform="translate(0,-170) rotate(${f(ang+b*120)})"/>`;
+  w+=`<circle cx="0" cy="-170" r="10" fill="${C.teal}" stroke="${O}" stroke-width="3"/>`;
+  c2+=G(w,`translate(100,330) scale(${wk.toFixed(3)})`);
+  let sp=`<path d="M-80 0 L80 0 L60 -90 L-60 -90z" fill="#4F6D8A" stroke="${O}" stroke-width="3" stroke-linejoin="round"/>`;
+  for(let i=1;i<4;i++){sp+=`<line x1="${-80+i*40}" y1="0" x2="${-60+i*30}" y2="-90" stroke="#A9C3D6" stroke-width="2"/>`;}
+  sp+=`<line x1="-70" y1="-45" x2="70" y2="-45" stroke="#A9C3D6" stroke-width="2"/><rect x="-6" y="0" width="12" height="40" fill="${C.navy}"/>`;
+  const gl=((t*0.6)%1);
+  sp+=`<line x1="${f(-70+gl*120)}" y1="-10" x2="${f(-50+gl*120)}" y2="-80" stroke="#fff" stroke-width="6" opacity=".6" stroke-linecap="round"/>`;
+  c2+=G(sp,`translate(240,300) scale(${sk.toFixed(3)})`);
+  const su=pop(t,96.5,0.5);
+  let sun=`<circle r="26" fill="${C.yellow}" stroke="${O}" stroke-width="3"/>`;
+  for(let i=0;i<8;i++){const a=rad(i*45+t*30); sun+=`<line x1="${f(Math.cos(a)*34)}" y1="${f(Math.sin(a)*34)}" x2="${f(Math.cos(a)*46)}" y2="${f(Math.sin(a)*46)}" stroke="${C.mustard}" stroke-width="5" stroke-linecap="round"/>`;}
+  c2+=G(sun,`translate(280,110) scale(${su.toFixed(3)})`);
+  s+=card(465,150,2,'Erneuerbare Energie',t,92,c2,act===2);
+  // Karte 3: Effizienz
+  let c3='';
+  const glow=0.6+0.1*Math.sin(t*5);
+  function bulb(x,led,k){
+    let b=`<circle cx="${x}" cy="130" r="${f(70*glow)}" fill="#F6D77A" opacity="${f(0.35*k)}"/>`;
+    b+=`<path d="M${x-38} 130 a38 38 0 1 1 76 0 q0 22 -16 36 v14 h-44 v-14 q-16 -14 -16 -36z" fill="${k>0.5?'#FBE7A1':'#E8E1D0'}" stroke="${O}" stroke-width="3"/>`;
+    b+= led ? `<rect x="${x-16}" y="122" width="32" height="18" rx="5" fill="${C.yellow}" stroke="${O}" stroke-width="2"/>`
+            : `<path d="M${x-12} 160 v-30 l6 -8 l6 8 l6 -8 l6 8 v30" fill="none" stroke="${C.mustard}" stroke-width="3"/>`;
+    b+=`<rect x="${x-22}" y="180" width="44" height="22" rx="6" fill="${C.grey}" stroke="${O}" stroke-width="3"/>`;
+    return b;
+  }
+  const bk=P(t,107,107.6);
+  c3+=bulb(105,false,bk)+bulb(245,true,bk);
+  const bar=eio(P(t,109,111));
+  c3+=`<line x1="40" y1="350" x2="310" y2="350" stroke="${O}" stroke-width="3"/>`;
+  c3+=`<rect x="80" y="${f(350-110*bar)}" width="50" height="${f(110*bar)}" rx="8" fill="${C.red}" stroke="${O}" stroke-width="3"/>`;
+  c3+=`<rect x="220" y="${f(350-15*bar)}" width="50" height="${f(15*bar)}" rx="6" fill="${C.green}" stroke="${O}" stroke-width="3"/>`;
+  c3+=G(txt(105,228,'60 W',22,O,900)+txt(245,228,'8 W',22,O,900),'',P(t,110.5,111));
+  c3+=G(`<rect x="95" y="20" width="160" height="40" rx="20" fill="${C.green}" stroke="${O}" stroke-width="3"/>`+txt(175,48,'gleich hell!',22,'#fff',900),'',P(t,112.5,113));
+  s+=card(870,150,3,'Energieeffizienz',t,106,c3,act===3);
+  return s;
+}
+
+// 2:00–2:30 Warum es uns alle betrifft
+function bez(a,c,b,u){return [(1-u)*(1-u)*a[0]+2*(1-u)*u*c[0]+u*u*b[0],(1-u)*(1-u)*a[1]+2*(1-u)*u*c[1]+u*u*b[1]];}
+function sWhy(t){
+  const lt=t-120;
+  let s=stripes()+`<rect x="0" y="600" width="1280" height="120" fill="${C.sage}" stroke="${O}" stroke-width="3"/>`;
+  s+=G(txt(640,90,'Warum es uns alle betrifft',46,O,900),scaleAt(640,75,pop(t,120.4)),1-P(lt,6.5,7.2));
+  // Sonne
+  const sk=pop(t,121,0.7)*(1+0.03*Math.sin(t*3));
+  const sy=lerp(-100,lt>7?150:300,eout(P(lt,0.8,2)));
+  const syy=lt>7?lerp(300,150,eio(P(lt,7,8))):sy;
+  let sun=`<circle r="70" fill="${C.yellow}" stroke="${O}" stroke-width="3"/>`;
+  for(let i=0;i<12;i++){const a=rad(i*30+t*15); sun+=`<path d="M${f(Math.cos(a)*84)} ${f(Math.sin(a)*84)} L${f(Math.cos(a)*112)} ${f(Math.sin(a)*112)}" stroke="${C.mustard}" stroke-width="10" stroke-linecap="round"/>`;}
+  sun+=`<ellipse cx="-22" cy="-8" rx="7" ry="${blinkAt(t)?1:9}" fill="${O}"/><ellipse cx="22" cy="-8" rx="7" ry="${blinkAt(t)?1:9}" fill="${O}"/><path d="M-22 18 Q0 36 22 18" stroke="${O}" stroke-width="4" fill="none" stroke-linecap="round"/><circle cx="-40" cy="14" r="9" fill="${C.peach}" opacity=".8"/><circle cx="40" cy="14" r="9" fill="${C.peach}" opacity=".8"/>`;
+  // Ziele
+  const T=[[220,420,128],[640,470,135],[1060,420,142]];
+  const src=[640,syy];
+  T.forEach(([x,y,t0],i)=>{
+    const u=eio(P(t,t0,t0+1.6));
+    if(u<=0) return;
+    const ctrl=[ (src[0]+x)/2 + (i===1?0:(i===0?-60:60)), Math.min(src[1],y)-40 ];
+    for(let k=0.12;k<0.86;k+=0.06){
+      const kk=k+((t*0.15)%0.06);
+      if(kk>u*0.86) break;
+      const q=bez(src,ctrl,[x,y-150],kk);
+      s+=`<circle cx="${f(q[0])}" cy="${f(q[1])}" r="6" fill="${C.mustard}" stroke="${O}" stroke-width="1.5"/>`;
+    }
+    if(u>0.95){const q=bez(src,ctrl,[x,y-150],0.88), q0=bez(src,ctrl,[x,y-150],0.84); const a=Math.atan2(q[1]-q0[1],q[0]-q0[0])*180/Math.PI;
+      s+=`<path d="M0 -12 L20 0 L0 12z" transform="translate(${f(q[0])},${f(q[1])}) rotate(${f(a)})" fill="${C.mustard}" stroke="${O}" stroke-width="2"/>`;}
+  });
+  s+=G(sun,`translate(640,${f(syy)}) scale(${sk.toFixed(3)})`);
+  // Krankenhaus
+  const on1=P(t,129.4,129.8), on2=P(t,136.4,136.8), on3=P(t,143.4,143.8);
+  const ak1=pop(t,127,0.6), ak2=pop(t,134,0.6), ak3=pop(t,141,0.6);
+  let h=`<rect x="-120" y="-170" width="240" height="250" rx="20" fill="${C.white}" stroke="${O}" stroke-width="3"/><rect x="-40" y="-230" width="80" height="70" rx="14" fill="${C.white}" stroke="${O}" stroke-width="3"/>`;
+  h+=`<path d="M-10 -222 h20 v20 h20 v20 h-20 v20 h-20 v-20 h-20 v-20 h20z" fill="${C.red}"/>`;
+  for(let r=0;r<2;r++)for(let c=0;c<4;c++) h+=`<rect x="${-100+c*52}" y="${-140+r*60}" width="36" height="40" rx="8" fill="${on1?'#F6D77A':'#A5AEB8'}" stroke="${O}" stroke-width="2"/>`;
+  h+=`<rect x="-25" y="10" width="50" height="70" rx="10" fill="${C.teal}" stroke="${O}" stroke-width="3"/>`;
+  s+=G(h,`translate(220,520) scale(${ak1.toFixed(3)})`);
+  if(ak1>0.5) s+=person({x:62,y:625,s:0.55,shirt:'#F4F1EA',hair:C.brown,style:'bun',armR:on1?[150,Math.sin(t*7)*25-20]:[12,-8],mouth:on1?'big':'flat',look:1,blink:blinkAt(t,7),
+     front:`<rect x="-14" y="-160" width="28" height="22" rx="4" fill="${C.teal}"/><circle cx="30" cy="-150" r="8" fill="none" stroke="${O}" stroke-width="3"/>`});
+  // Laptop / Bildung
+  let l=`<path d="M-150 0 L-120 -190 H120 L150 0z" fill="none"/>`;
+  l=`<rect x="-130" y="-200" width="260" height="170" rx="16" fill="${C.navy}" stroke="${O}" stroke-width="3"/><rect x="-116" y="-186" width="232" height="142" rx="8" fill="${on2?'#BFD7D4':'#3E5368'}"/>`;
+  if(on2) l+=`<path d="M-50 -110 l50 -24 l50 24 l-50 24z" fill="${O}"/><path d="M-30 -100 v26 q30 16 60 0 v-26" fill="${O}"/><line x1="50" y1="-110" x2="50" y2="-80" stroke="${O}" stroke-width="4"/>`+txt(0,-56,'Lernen',22,O,900);
+  l+=`<path d="M-160 -30 H160 L176 0 H-176z" fill="#B9BFC8" stroke="${O}" stroke-width="3" stroke-linejoin="round"/>`;
+  const stud=ak2>0.5?person({x:-240,y:95,s:0.6,shirt:C.mustard,hair:C.navy,armR:[100,-20+Math.sin(t*6)*8],mouth:on2?'big':'flat',look:1.5,blink:blinkAt(t,8)}):'';
+  s+=G(`${stud}<rect x="-200" y="0" width="400" height="20" rx="8" fill="${C.wood}" stroke="${O}" stroke-width="3"/><rect x="-180" y="20" width="16" height="70" fill="${C.woodD}"/><rect x="164" y="20" width="16" height="70" fill="${C.woodD}"/>`+l,`translate(640,530) scale(${ak2.toFixed(3)})`);
+  // Fabrik
+  let fb=`<path d="M-140 80 V-80 l70 -50 v50 l70 -50 v50 l70 -50 V80z" fill="${C.peach}" stroke="${O}" stroke-width="3" stroke-linejoin="round"/>`;
+  fb+=`<rect x="90" y="-210" width="36" height="290" fill="#B8B0A0" stroke="${O}" stroke-width="3"/>`;
+  if(on3) for(let i=0;i<3;i++){const a=((t*0.8+i/3)%1); fb+=`<circle cx="${f(108+a*30)}" cy="${f(-220-a*70)}" r="${f(10+a*16)}" fill="#fff" opacity="${f(0.8*(1-a))}" stroke="${O}" stroke-width="1.5"/>`;}
+  for(let c=0;c<3;c++) fb+=`<rect x="${-120+c*70}" y="-50" width="44" height="40" rx="8" fill="${on3?'#F6D77A':'#A5AEB8'}" stroke="${O}" stroke-width="2"/>`;
+  let gear=`<circle r="22" fill="${C.grey}" stroke="${O}" stroke-width="3"/><circle r="8" fill="${C.white}" stroke="${O}" stroke-width="2"/>`;
+  for(let i=0;i<8;i++) gear=`<rect x="-6" y="-32" width="12" height="14" rx="3" fill="${C.grey}" stroke="${O}" stroke-width="2" transform="rotate(${i*45})"/>`+gear;
+  fb+=`<g transform="translate(-40,30) rotate(${f(on3?t*90:0)})">${gear}</g>`;
+  s+=G(fb,`translate(1060,520) scale(${ak3.toFixed(3)})`);
+  if(ak3>0.5) s+=person({x:1225,y:625,s:0.5,shirt:C.teal,pants:'#3E4F6B',armL:on3?[150,-Math.sin(t*7)*25-20]:[12,-8],mouth:on3?'big':'flat',look:-1,blink:blinkAt(t,9),
+     extra:`<path d="M-70 -300 Q-70 -350 0 -350 Q70 -350 70 -300 Z" fill="${C.yellow}" stroke="${O}" stroke-width="3"/><rect x="-80" y="-306" width="160" height="14" rx="7" fill="${C.yellow}" stroke="${O}" stroke-width="3"/>`});
+  // Labels
+  s+=G(`<rect x="130" y="640" width="180" height="50" rx="25" fill="${C.white}" stroke="${O}" stroke-width="3"/>`+txt(220,674,'Gesundheit',24,O,900),'',on1);
+  s+=G(`<rect x="550" y="640" width="180" height="50" rx="25" fill="${C.white}" stroke="${O}" stroke-width="3"/>`+txt(640,674,'Bildung',24,O,900),'',on2);
+  s+=G(`<rect x="970" y="640" width="180" height="50" rx="25" fill="${C.white}" stroke="${O}" stroke-width="3"/>`+txt(1060,674,'Wirtschaft',24,O,900),'',on3);
+  return s;
+}
+
+// 2:30–2:44 Call to Action im Zimmer
+function sRoom(t){
+  const lt=t-150;
+  const lightOff=P(t,152.6,152.8);
+  // Position der Figur
+  const stops=[[150,380],[153.6,380],[154.6,590],[158.4,590],[159.4,1000]];
+  let px=stops[0][1], walking=false;
+  for(let i=0;i<stops.length-1;i++){const [a,xa]=stops[i],[b,xb]=stops[i+1]; if(t>=a&&t<b){px=lerp(xa,xb,eio(P(t,a,b))); walking=xa!==xb;} if(t>=b) px=xb;}
+  let s=stripes('#EDE3CF','#E4D9C2',0,560)+`<rect x="0" y="560" width="1280" height="160" fill="${C.wood}" stroke="${O}" stroke-width="3"/>`;
+  for(let x=0;x<1280;x+=160) s+=`<line x1="${x}" y1="560" x2="${x-60}" y2="720" stroke="${C.woodD}" stroke-width="3"/>`;
+  // Fenster
+  s+=`<rect x="60" y="130" width="170" height="220" rx="18" fill="#CFE0DD" stroke="${O}" stroke-width="3"/><line x1="145" y1="130" x2="145" y2="350" stroke="${O}" stroke-width="3"/><line x1="60" y1="240" x2="230" y2="240" stroke="${O}" stroke-width="3"/><circle cx="190" cy="180" r="20" fill="${C.yellow}" opacity=".8"/>`;
+  // Lampe
+  s+=`<line x1="560" y1="0" x2="560" y2="110" stroke="${O}" stroke-width="3"/><path d="M510 150 Q510 110 560 110 Q610 110 610 150z" fill="${C.teal}" stroke="${O}" stroke-width="3"/>`;
+  s+=`<circle cx="560" cy="156" r="14" fill="${lightOff?'#CFC7B5':'#FBE7A1'}" stroke="${O}" stroke-width="2"/>`;
+  if(lightOff<1) s+=`<path d="M520 160 L380 560 H740 L600 160z" fill="#F6D77A" opacity="${f(0.22*(1-lightOff))}"/>`;
+  // Lichtschalter
+  s+=`<rect x="210" y="400" width="50" height="70" rx="12" fill="${C.white}" stroke="${O}" stroke-width="3"/><rect x="224" y="${lightOff?436:414}" width="22" height="20" rx="5" fill="${C.grey}" stroke="${O}" stroke-width="2"/>`;
+  // Heizung + Thermostat
+  const heat=1-eio(P(t,156.2,157.4))*0.5;
+  s+=`<rect x="780" y="420" width="240" height="120" rx="16" fill="${C.white}" stroke="${O}" stroke-width="3"/>`;
+  for(let i=1;i<6;i++) s+=`<line x1="${780+i*40}" y1="430" x2="${780+i*40}" y2="530" stroke="${O}" stroke-width="3"/>`;
+  for(let i=0;i<3;i++){const a=(t*0.7+i/3)%1; s+=`<path d="M${820+i*80} ${f(410-a*80)} q12 -14 0 -28 q-12 -14 0 -28" stroke="${C.red}" stroke-width="5" fill="none" stroke-linecap="round" opacity="${f((1-a)*0.7*heat*heat)}"/>`;}
+  const dial=lerp(0,-70,eio(P(t,156,157.4)));
+  s+=`<g transform="translate(735,470)"><circle r="30" fill="${C.white}" stroke="${O}" stroke-width="3"/><g transform="rotate(${f(dial)})"><line x1="0" y1="0" x2="0" y2="-22" stroke="${C.red}" stroke-width="5" stroke-linecap="round"/></g>${txt(0,52,t<156.8?'5':'3',22,O,900)}</g>`;
+  // Schreibtisch + Laptop
+  s+=`<rect x="1060" y="400" width="210" height="18" rx="6" fill="${C.woodD}" stroke="${O}" stroke-width="3"/><rect x="1080" y="418" width="14" height="142" fill="${C.woodD}"/><rect x="1236" y="418" width="14" height="142" fill="${C.woodD}"/>`;
+  const tog=eio(P(t,161,161.6));
+  s+=`<g transform="translate(1165,400)"><path d="M-80 0 L-70 -110 H70 L80 0z" fill="${C.navy}" stroke="${O}" stroke-width="3" stroke-linejoin="round"/><rect x="-62" y="-102" width="124" height="94" rx="6" fill="#EAF1EE"/>`+
+    txt(0,-80,'Ökostrom',18,O,900)+
+    `<rect x="-30" y="-64" width="60" height="30" rx="15" fill="${tog>0.5?C.green:'#BDB6A8'}" stroke="${O}" stroke-width="2"/><circle cx="${f(-15+30*tog)}" cy="-49" r="12" fill="#fff" stroke="${O}" stroke-width="2"/>`+
+    G(`<path d="M0 0 C-14 -6 -16 -24 0 -36 C16 -24 14 -6 0 0z" fill="${C.green}" stroke="${O}" stroke-width="2"/><line x1="0" y1="0" x2="0" y2="-26" stroke="${O}" stroke-width="2"/>`,`translate(0,-10) scale(${pop(t,161.8,0.4).toFixed(3)})`)+`</g>`;
+  // Figur – Armhaltung je nach Aktion
+  let armL=[12,-8], armR=[12,-8], look=0, mouth='smile';
+  if(t<154){ armL = t>151.6? [lerp(12,110,eio(P(t,151.6,152.4))), lerp(-8,-10,P(t,151.6,152.4))] : [12,-8]; look=-1.5; if(t>153.2) armL=[lerp(110,12,eio(P(t,153.2,153.6))),-8]; }
+  else if(t>154.6&&t<158.4){ armR=[lerp(12,85,eio(P(t,155,155.8))),-10-6*Math.sin(t*6)*P(t,156,157.4)]; if(t>157.8) armR=[lerp(85,12,eio(P(t,157.8,158.3))),-8]; look=1.5; }
+  else if(t>159.4){ armR=[lerp(12,135,eio(P(t,159.8,160.6))),lerp(-8,-30,P(t,159.8,160.6))]; look=1.5; mouth=t>161.6?'big':'smile'; }
+  const wk=walking?(t*12):null;
+  s+=person({x:px,y:640,s:0.95,shirt:C.teal,hair:C.navy,armL,armR,look,mouth,walk:wk,blink:blinkAt(t,10),bob:walking?-Math.abs(Math.sin(t*12))*6:0});
+  // Abdunkeln, wenn Licht aus
+  s+=`<rect width="1280" height="720" fill="#2B3040" opacity="${f(lightOff*0.12)}"/>`;
+  // Häkchen-Badges
+  const bdg=(x,y,tt)=>{const k=pop(t,tt,0.45); return G(`<circle r="26" fill="${C.green}" stroke="${O}" stroke-width="3"/><path d="M-11 1 l7 9 l15 -18" stroke="#fff" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,`translate(${x},${y}) scale(${k.toFixed(3)})`);};
+  s+=bdg(290,380,153)+bdg(770,400,157.6)+bdg(1250,250,162.2);
+  return s;
+}
+
+// 2:44–2:50 Outro
+function sOutro(t){
+  const lt=t-164;
+  let s=stripes();
+  s+=G(sdgTile(t,163.2),`translate(640,280) scale(${(pop(t,164.2)*0.8).toFixed(4)}) translate(-150,-150)`);
+  s+=G(txt(640,500,'Jede Kilowattstunde zählt!',50,O,900),scaleAt(640,485,pop(t,165.2)));
+  s+=G(txt(640,550,'SDG 7 – Energie für alle',30,C.tealD,800),'',P(t,166,166.6));
+  const w=Math.sin(t*7)*25;
+  s+=G(person({x:200,y:720,s:0.7,shirt:C.peach,hair:C.brown,style:'bun',armR:[150,w-20],mouth:'big',look:1,blink:blinkAt(t,11)})+
+       person({x:1080,y:720,s:0.7,shirt:C.teal,armL:[150,-w-20],mouth:'big',look:-1,blink:blinkAt(t,12)}),'',P(t,165.5,166.2));
+  return s;
+}
+
+// ---------- Untertitel ----------
+const CAPS=[
+ [0.3,5,'Morgens: Handy laden.'],
+ [5,10,'Mit dem Zug zur Schule.'],
+ [10,15,'Abends gehen überall die Lichter an.'],
+ [15,20,'Und plötzlich … ist der Strom weg.'],
+ [20.6,26,'Für fast 700 Millionen Menschen ist das Alltag – sie haben gar keinen Strom.'],
+ [26,32,'Genau darum geht es in SDG 7: Bezahlbare und saubere Energie.'],
+ [32,38.3,'Es ist eines von 17 Zielen, die die Vereinten Nationen 2015 beschlossen haben.'],
+ [38.3,44.8,'Bis 2030 soll die Welt gerechter und nachhaltiger werden – für alle.'],
+ [45.2,52,'Das Problem: Ein großer Teil unserer Energie kommt noch aus Kohle, Öl und Gas.'],
+ [52,59.8,'Beim Verbrennen entsteht CO₂. Es legt sich wie eine Decke um die Erde – der Treibhauseffekt.'],
+ [60.2,66.8,'Gleichzeitig wird Energie für viele Menschen immer teurer.'],
+ [67.2,74.8,'Wie schaffen wir also die globale Energiewende?'],
+ [75.3,80,'SDG 7 hat drei Kernziele.'],
+ [80,92,'Erstens: Jeder Mensch soll Zugang zu bezahlbarem und verlässlichem Strom haben.'],
+ [92,106,'Zweitens: Viel mehr Energie aus erneuerbaren Quellen – wie Wind und Sonne.'],
+ [106,119.8,'Drittens: Energie effizienter nutzen. Eine LED leuchtet genauso hell, braucht aber viel weniger Strom.'],
+ [120.2,127.5,'Warum betrifft das uns alle?'],
+ [127.5,134.5,'Krankenhäuser brauchen Strom, um Leben zu retten.'],
+ [134.5,141.5,'Schulen brauchen Strom – für Licht, Computer und Lernen.'],
+ [141.5,149.8,'Und Fabriken brauchen Strom für Arbeitsplätze.'],
+ [150.2,154.6,'Was kannst du tun? Licht aus, wenn du den Raum verlässt.'],
+ [154.6,159,'Die Heizung ein bisschen runterdrehen.'],
+ [159,163.8,'Oder zu Ökostrom wechseln.'],
+];
+
+// ---------- Hauptfunktion ----------
+function scene(t){
+  if(t<5) return sPhone(t);
+  if(t<10) return sTrain(t);
+  if(t<15) return sCity(t);
+  if(t<20) return sBlackout(t);
+  if(t<45) return sIntro(t);
+  if(t<60) return sCoal(t);
+  if(t<67) return sPrice(t);
+  if(t<75) return sQuestion(t);
+  if(t<120) return sGoals(t);
+  if(t<150) return sWhy(t);
+  if(t<164) return sRoom(t);
+  return sOutro(t);
+}
+function renderFrame(t){
+  let s=scene(t);
+  // Blenden zwischen Abschnitten
+  let fade=0;
+  for(const b of [45,60,67,75,120,150,164]) fade=Math.max(fade,1-Math.abs(t-b)/0.35);
+  if(fade>0) s+=`<rect width="1280" height="720" fill="${C.cream}" opacity="${f(fade)}"/>`;
+  // kurze Weiß-Blitze bei den schnellen Schnitten
+  for(const b of [5,10]){const k=1-Math.abs(t-b)/0.12; if(k>0) s+=`<rect width="1280" height="720" fill="#fff" opacity="${f(k*0.7)}"/>`;}
+  const fi=1-P(t,20,21); if(t>=20&&fi>0) s+=`<rect width="1280" height="720" fill="#0E1016" opacity="${f(fi)}"/>`;
+  const fo=P(t,168.8,170); if(fo>0) s+=`<rect width="1280" height="720" fill="#000" opacity="${f(fo)}"/>`;
+  const fs=1-P(t,0,0.4); if(fs>0) s+=`<rect width="1280" height="720" fill="#000" opacity="${f(fs)}"/>`;
+  document.getElementById('svg').innerHTML=s;
+  const cap=document.getElementById('cap');
+  const c=CAPS.find(c=>t>=c[0]&&t<c[1]);
+  if(c && !window.NOCAPS){cap.style.display='block'; if(cap.textContent!==c[2]) cap.textContent=c[2]; cap.style.opacity=Math.min(1,(t-c[0])/0.25,(c[1]-t)/0.25);}
+  else cap.style.display='none';
+}
+window.renderFrame=renderFrame;
+
+// ---------- Vorschau im Browser ----------
+if(!window.RENDER_MODE){
+  const params=new URLSearchParams(location.search);
+  let start=performance.now()-(parseFloat(params.get('t'))||0)*1000;
+  const audio=new Audio('music.wav');
+  document.addEventListener('click',()=>{start=performance.now(); audio.currentTime=0; audio.play().catch(()=>{});});
+  (function loop(){const t=((performance.now()-start)/1000)%DUR; renderFrame(t); requestAnimationFrame(loop);})();
+}
+</script>
+</body>
+</html>
