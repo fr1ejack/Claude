@@ -1,0 +1,1 @@
+{ "parent": "minecraft:item/generated", "textures": { "layer0": "hiveinvasion:item/exo_trigger" } }

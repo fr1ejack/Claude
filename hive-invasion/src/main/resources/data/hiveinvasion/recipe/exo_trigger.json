@@ -1,0 +1,4 @@
+{ "type": "minecraft:crafting_shaped", "category": "equipment",
+  "pattern": ["R", "I"],
+  "key": { "R": {"item": "minecraft:redstone"}, "I": {"item": "minecraft:iron_ingot"} },
+  "result": { "id": "hiveinvasion:exo_trigger", "count": 1 } }

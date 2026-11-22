@@ -1,0 +1,1 @@
+{ "variants": { "": [ {"model":"hiveinvasion:block/acid_puddle"}, {"model":"hiveinvasion:block/acid_puddle","y":90}, {"model":"hiveinvasion:block/acid_puddle","y":180}, {"model":"hiveinvasion:block/acid_puddle","y":270} ] } }

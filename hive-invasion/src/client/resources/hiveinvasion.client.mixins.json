@@ -1,0 +1,7 @@
+{
+  "required": true,
+  "package": "de.hiveinvasion.mixin.client",
+  "compatibilityLevel": "JAVA_21",
+  "client": ["PlayerRendererMixin"],
+  "injectors": { "defaultRequire": 1 }
+}

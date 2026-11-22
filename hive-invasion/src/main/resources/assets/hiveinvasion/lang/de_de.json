@@ -12,5 +12,18 @@
   "message.hiveinvasion.clinger_attached": "Etwas hat sich an dein Gesicht geklammert!",
   "message.hiveinvasion.parasite_moving": "Etwas bewegt sich in dir …",
   "death.attack.hiveinvasion.burst": "Aus %1$s ist etwas herausgebrochen",
-  "death.attack.hiveinvasion.burst.player": "Aus %1$s ist auf der Flucht vor %2$s etwas herausgebrochen"
+  "death.attack.hiveinvasion.burst.player": "Aus %1$s ist auf der Flucht vor %2$s etwas herausgebrochen",
+  "entity.hiveinvasion.corpse": "Leiche",
+  "entity.hiveinvasion.exo_suit": "Exo-Anzug",
+  "entity.hiveinvasion.plasma_bolt": "Plasmageschoss",
+  "item.hiveinvasion.exo_suit": "Exo-Anzug",
+  "item.hiveinvasion.exo_trigger": "Exo-Auslöser",
+  "item.hiveinvasion.plasma_bolt": "Plasmageschoss",
+  "block.hiveinvasion.blood_puddle": "Blutlache",
+  "block.hiveinvasion.acid_puddle": "Säurelache",
+  "container.hiveinvasion.corpse": "Leiche",
+  "container.hiveinvasion.corpse_of": "Leiche von %s",
+  "message.hiveinvasion.exo_online": "Exo-Anzug: Alle Systeme online",
+  "message.hiveinvasion.exo_hint": "Stell dich mit dem Rücken vor den Anzug und drück den Auslöser (oder den roten Knopf am Anzug)",
+  "message.hiveinvasion.exo_critical": "WARNUNG: Panzerung kritisch!"
 }

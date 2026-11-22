@@ -4,18 +4,30 @@
   "version": "${version}",
   "name": "Hive Invasion",
   "description": "Eine außerirdische Brut überfällt die Welt: Brutkapseln, Parasiten, Larven und jagende Stalker mit Säureblut.",
-  "authors": ["fr1ejack"],
+  "authors": [
+    "fr1ejack"
+  ],
   "license": "All-Rights-Reserved",
   "icon": "assets/hiveinvasion/icon.png",
   "environment": "*",
   "entrypoints": {
-    "main": ["de.hiveinvasion.HiveInvasion"],
-    "client": ["de.hiveinvasion.client.HiveInvasionClient"]
+    "main": [
+      "de.hiveinvasion.HiveInvasion"
+    ],
+    "client": [
+      "de.hiveinvasion.client.HiveInvasionClient"
+    ]
   },
   "depends": {
     "fabricloader": ">=0.16.0",
     "minecraft": "~1.21.1",
     "java": ">=21",
     "fabric-api": "*"
-  }
+  },
+  "mixins": [
+    {
+      "config": "hiveinvasion.client.mixins.json",
+      "environment": "client"
+    }
+  ]
 }

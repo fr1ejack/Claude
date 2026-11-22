@@ -1,6 +1,7 @@
 package de.hiveinvasion.registry;
 
 import de.hiveinvasion.HiveInvasion;
+import de.hiveinvasion.block.BloodPuddleBlock;
 import de.hiveinvasion.block.BroodPodBlock;
 import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.Block;
@@ -26,7 +27,21 @@ public final class ModBlocks {
             .strength(2.5f, 4.0f)
             .sounds(BlockSoundGroup.HONEY)));
 
+    /** Blutlachen – kein Item, entstehen nur durch Verletzungen. */
+    public static final Block BLOOD_PUDDLE = registerNoItem("blood_puddle", new BloodPuddleBlock(puddle(MapColor.DARK_RED), false));
+    public static final Block ACID_PUDDLE = registerNoItem("acid_puddle", new BloodPuddleBlock(puddle(MapColor.LIME).luminance(s -> 4), true));
+
     private ModBlocks() {}
+
+    private static AbstractBlock.Settings puddle(MapColor color) {
+        return AbstractBlock.Settings.create().mapColor(color).noCollision().breakInstantly().nonOpaque()
+                .replaceable().dropsNothing().ticksRandomly().sounds(BlockSoundGroup.HONEY)
+                .pistonBehavior(net.minecraft.block.piston.PistonBehavior.DESTROY);
+    }
+
+    private static Block registerNoItem(String name, Block block) {
+        return Registry.register(Registries.BLOCK, HiveInvasion.id(name), block);
+    }
 
     private static Block register(String name, Block block) {
         Registry.register(Registries.BLOCK, HiveInvasion.id(name), block);

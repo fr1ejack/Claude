@@ -1,10 +1,24 @@
 package de.hiveinvasion;
 
-import de.hiveinvasion.registry.ModBlocks;
-import de.hiveinvasion.registry.ModEffects;
-import de.hiveinvasion.registry.ModEntities;
-import de.hiveinvasion.registry.ModItems;
+import de.hiveinvasion.entity.ClingerEntity;
+import de.hiveinvasion.entity.CorpseEntity;
+import de.hiveinvasion.exo.ExoSuitEntity;
+import de.hiveinvasion.fx.BloodFx;
+import de.hiveinvasion.net.ExoInputPayload;
+import de.hiveinvasion.registry.*;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
+import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.boss.WitherEntity;
+import net.minecraft.entity.boss.dragon.EnderDragonEntity;
+import net.minecraft.entity.mob.*;
+import net.minecraft.entity.passive.AllayEntity;
+import net.minecraft.entity.passive.BatEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.registry.tag.DamageTypeTags;
+import net.minecraft.entity.damage.DamageTypes;
 import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,9 +40,55 @@ public class HiveInvasion implements ModInitializer {
     @Override
     public void onInitialize() {
         ModEffects.register();
+        ModParticles.register();
         ModBlocks.register();
         ModEntities.register();
         ModItems.register();
+
+        // Steuerung des Exo-Anzugs vom Client.
+        PayloadTypeRegistry.playC2S().register(ExoInputPayload.ID, ExoInputPayload.CODEC);
+        ServerPlayNetworking.registerGlobalReceiver(ExoInputPayload.ID, (payload, ctx) -> {
+            if (ctx.player().getVehicle() instanceof ExoSuitEntity suit) {
+                suit.setInput(payload.fire(), payload.shield(), payload.boost());
+            }
+        });
+
+        // Wer im Exo-Anzug sitzt, wird vom Anzug geschützt: der Schaden geht auf den Anzug.
+        ServerLivingEntityEvents.ALLOW_DAMAGE.register((entity, source, amount) -> {
+            if (entity instanceof PlayerEntity && entity.getVehicle() instanceof ExoSuitEntity suit
+                    && !source.isIn(DamageTypeTags.BYPASSES_INVULNERABILITY)
+                    && !source.isOf(DamageTypes.STARVE) && !source.isOf(DamageTypes.OUT_OF_WORLD)
+                    && !source.getTypeRegistryEntry().matchesKey(de.hiveinvasion.effect.ParasiteEffect.BURST)) {
+                if (!source.isOf(DamageTypes.DROWN) && !source.isOf(DamageTypes.FALL)) suit.damage(source, amount);
+                return false;
+            }
+            return true;
+        });
+
+        // Blut
+        ServerLivingEntityEvents.AFTER_DAMAGE.register((entity, source, baseDamage, damageTaken, blocked) -> {
+            if (!blocked) BloodFx.onHurt(entity, damageTaken);
+        });
+
+        // Leichen bleiben liegen
+        ServerLivingEntityEvents.AFTER_DEATH.register((entity, source) -> {
+            BloodFx.onDeath(entity);
+            if (leavesCorpse(entity)) {
+                entity.getWorld().spawnEntity(CorpseEntity.of(ModEntities.CORPSE, entity));
+            }
+        });
+
         LOGGER.info("Hive Invasion geladen – die Brut erwacht.");
+    }
+
+    private static boolean leavesCorpse(LivingEntity e) {
+        if (e instanceof PlayerEntity) return !e.isSpectator();
+        if (!(e instanceof MobEntity)) return false;
+        if (e instanceof EnderDragonEntity || e instanceof WitherEntity || e instanceof SlimeEntity
+                || e instanceof VexEntity || e instanceof AllayEntity || e instanceof BatEntity
+                || e instanceof GhastEntity || e instanceof PhantomEntity || e instanceof ClingerEntity
+                || e instanceof ExoSuitEntity) return false;
+        float w = e.getWidth();
+        return w >= 0.35f && w <= 2.0f;
     }
 }

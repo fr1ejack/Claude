@@ -12,5 +12,18 @@
   "message.hiveinvasion.clinger_attached": "Something latched onto your face!",
   "message.hiveinvasion.parasite_moving": "Something is moving inside you...",
   "death.attack.hiveinvasion.burst": "Something burst out of %1$s",
-  "death.attack.hiveinvasion.burst.player": "Something burst out of %1$s while fleeing %2$s"
+  "death.attack.hiveinvasion.burst.player": "Something burst out of %1$s while fleeing %2$s",
+  "entity.hiveinvasion.corpse": "Corpse",
+  "entity.hiveinvasion.exo_suit": "Exo Suit",
+  "entity.hiveinvasion.plasma_bolt": "Plasma Bolt",
+  "item.hiveinvasion.exo_suit": "Exo Suit",
+  "item.hiveinvasion.exo_trigger": "Exo Trigger",
+  "item.hiveinvasion.plasma_bolt": "Plasma Bolt",
+  "block.hiveinvasion.blood_puddle": "Blood Puddle",
+  "block.hiveinvasion.acid_puddle": "Acid Puddle",
+  "container.hiveinvasion.corpse": "Corpse",
+  "container.hiveinvasion.corpse_of": "Corpse of %s",
+  "message.hiveinvasion.exo_online": "Exo Suit: all systems online",
+  "message.hiveinvasion.exo_hint": "Stand with your back to the suit and press the trigger (or the red button on the suit)",
+  "message.hiveinvasion.exo_critical": "WARNING: armor critical!"
 }

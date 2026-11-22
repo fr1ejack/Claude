@@ -3,9 +3,22 @@
 Eine außerirdische Brut überfällt die Welt. Eigene Kreaturen mit Parasiten-Lebenszyklus,
 Säureblut, Nestern – und später Städte, Militär, Fahrzeuge und Cutscenes.
 
-![Screenshot](docs/screenshot-v0.1.png)
+![Aliens](docs/media/aliens-v0.2.png)
 
-## Stand: Version 0.1 (Phase 1)
+Clips: [Anzug anlegen](docs/media/clip-anzug-anlegen-v0.2.mp4) · [Kampf im Exo-Anzug](docs/media/clip-kampf-v0.2.mp4)
+
+## Neu in Version 0.2
+
+| Inhalt | Was es tut |
+|---|---|
+| **Blut** | Rote Blutspritzer und Blutlachen bei Menschen und Tieren, leuchtend grünes Säureblut bei Aliens (Säurelachen ätzen). Lachen trocknen nach einigen Minuten weg. |
+| **Leichen** | Spieler und fast alle Mobs bleiben nach dem Tod liegen (auf der Seite, mit Skin). Sie haben Schwerkraft, lassen sich schieben und wegschlagen. **Rechtsklick** öffnet die Beute des Toten, **Schleichen + Schlagen** räumt die Leiche weg. |
+| **Exo-Anzug** | Aufstellen, mit dem Rücken davorstellen, **Exo-Auslöser** benutzen (oder den roten Knopf am Anzug drücken): Der Anzug schließt sich mit Kamerafahrt um dich – Beine, Brust, Arme, Helm. 1,5-fache Größe, 150 Panzerung. **Linksklick** Plasmakanone, **Rechtsklick halten** Energieschild, **Leertaste halten** Sprungdüsen, **Schleichen** aussteigen. Reparatur mit Eisenbarren. |
+| **Grafik** | Alle Aliens mit neuen, detaillierten Modellen und Texturen (Modell-/Textur-Generator `tools/modelgen.py`). |
+
+**Rezepte:** Exo-Anzug = 4 Eisenblöcke, Diamant, 2 Redstone-Blöcke, Netheritplatte. Auslöser = Redstone über Eisenbarren.
+
+## Version 0.1 (Phase 1)
 
 | Inhalt | Was es tut |
 |---|---|
