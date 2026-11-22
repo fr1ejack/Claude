@@ -1,0 +1,6 @@
+{ "variants": { "": [
+  { "model": "hiveinvasion:block/hive_resin" },
+  { "model": "hiveinvasion:block/hive_resin", "y": 90 },
+  { "model": "hiveinvasion:block/hive_resin", "y": 180 },
+  { "model": "hiveinvasion:block/hive_resin", "y": 270 }
+] } }

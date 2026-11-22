@@ -1,0 +1,16 @@
+{
+  "itemGroup.hiveinvasion.main": "Hive Invasion",
+  "block.hiveinvasion.brood_pod": "Brutkapsel",
+  "block.hiveinvasion.hive_resin": "Nest-Harz",
+  "entity.hiveinvasion.clinger": "Klammerer",
+  "entity.hiveinvasion.larva": "Larve",
+  "entity.hiveinvasion.stalker": "Stalker",
+  "item.hiveinvasion.clinger_spawn_egg": "Klammerer-Spawn-Ei",
+  "item.hiveinvasion.larva_spawn_egg": "Larven-Spawn-Ei",
+  "item.hiveinvasion.stalker_spawn_egg": "Stalker-Spawn-Ei",
+  "effect.hiveinvasion.parasite": "Parasit",
+  "message.hiveinvasion.clinger_attached": "Etwas hat sich an dein Gesicht geklammert!",
+  "message.hiveinvasion.parasite_moving": "Etwas bewegt sich in dir …",
+  "death.attack.hiveinvasion.burst": "Aus %1$s ist etwas herausgebrochen",
+  "death.attack.hiveinvasion.burst.player": "Aus %1$s ist auf der Flucht vor %2$s etwas herausgebrochen"
+}

@@ -1,0 +1,16 @@
+{
+  "itemGroup.hiveinvasion.main": "Hive Invasion",
+  "block.hiveinvasion.brood_pod": "Brood Pod",
+  "block.hiveinvasion.hive_resin": "Hive Resin",
+  "entity.hiveinvasion.clinger": "Clinger",
+  "entity.hiveinvasion.larva": "Larva",
+  "entity.hiveinvasion.stalker": "Stalker",
+  "item.hiveinvasion.clinger_spawn_egg": "Clinger Spawn Egg",
+  "item.hiveinvasion.larva_spawn_egg": "Larva Spawn Egg",
+  "item.hiveinvasion.stalker_spawn_egg": "Stalker Spawn Egg",
+  "effect.hiveinvasion.parasite": "Parasite",
+  "message.hiveinvasion.clinger_attached": "Something latched onto your face!",
+  "message.hiveinvasion.parasite_moving": "Something is moving inside you...",
+  "death.attack.hiveinvasion.burst": "Something burst out of %1$s",
+  "death.attack.hiveinvasion.burst.player": "Something burst out of %1$s while fleeing %2$s"
+}

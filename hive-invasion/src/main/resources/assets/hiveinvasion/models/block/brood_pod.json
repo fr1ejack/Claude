@@ -1,0 +1,138 @@
+{
+ "parent": "minecraft:block/block",
+ "textures": {
+  "particle": "hiveinvasion:block/brood_pod_side",
+  "side": "hiveinvasion:block/brood_pod_side",
+  "top": "hiveinvasion:block/brood_pod_top",
+  "bottom": "hiveinvasion:block/brood_pod_side"
+ },
+ "elements": [
+  {
+   "from": [
+    2,
+    0,
+    2
+   ],
+   "to": [
+    14,
+    12,
+    14
+   ],
+   "faces": {
+    "north": {
+     "texture": "#side",
+     "uv": [
+      2,
+      4,
+      14,
+      16
+     ]
+    },
+    "south": {
+     "texture": "#side",
+     "uv": [
+      2,
+      4,
+      14,
+      16
+     ]
+    },
+    "east": {
+     "texture": "#side",
+     "uv": [
+      2,
+      4,
+      14,
+      16
+     ]
+    },
+    "west": {
+     "texture": "#side",
+     "uv": [
+      2,
+      4,
+      14,
+      16
+     ]
+    },
+    "down": {
+     "texture": "#bottom",
+     "uv": [
+      2,
+      2,
+      14,
+      14
+     ]
+    },
+    "up": {
+     "texture": "#top",
+     "uv": [
+      2,
+      2,
+      14,
+      14
+     ]
+    }
+   }
+  },
+  {
+   "from": [
+    3,
+    12,
+    3
+   ],
+   "to": [
+    13,
+    14,
+    13
+   ],
+   "faces": {
+    "north": {
+     "texture": "#side",
+     "uv": [
+      3,
+      2,
+      13,
+      4
+     ]
+    },
+    "south": {
+     "texture": "#side",
+     "uv": [
+      3,
+      2,
+      13,
+      4
+     ]
+    },
+    "east": {
+     "texture": "#side",
+     "uv": [
+      3,
+      2,
+      13,
+      4
+     ]
+    },
+    "west": {
+     "texture": "#side",
+     "uv": [
+      3,
+      2,
+      13,
+      4
+     ]
+    },
+    "up": {
+     "texture": "#top",
+     "uv": [
+      3,
+      3,
+      13,
+      13
+     ]
+    }
+   }
+  }
+ ]
+}

@@ -1,0 +1,4 @@
+{ "variants": {
+  "open=false": { "model": "hiveinvasion:block/brood_pod" },
+  "open=true":  { "model": "hiveinvasion:block/brood_pod_open" }
+} }
