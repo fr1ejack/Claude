@@ -61,6 +61,10 @@ public class StalkerModel<T extends Entity> extends SinglePartEntityModel<T> {
         leftForearm.pitch = forearmPitch - Math.max(0, swing) * 0.5f;
         rightForearm.pitch = forearmPitch - Math.max(0, -swing) * 0.5f;
 
+        if (entity instanceof de.hiveinvasion.entity.StalkerEntity st && st.isCarrying()) {
+            leftArm.pitch = -1.3f; rightArm.pitch = -1.3f; leftArm.yaw = -0.35f; rightArm.yaw = 0.35f;
+            leftForearm.pitch = -0.4f; rightForearm.pitch = -0.4f;
+        }
         int mask = de.hiveinvasion.client.ClientGore.mask(entity);
         head.visible = !de.hiveinvasion.gore.Limb.HEAD.in(mask);
         leftArm.visible = !de.hiveinvasion.gore.Limb.LEFT_ARM.in(mask);

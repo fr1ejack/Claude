@@ -74,7 +74,8 @@ public class BroodPodBlock extends Block {
     private boolean tryHatch(BlockState state, ServerWorld world, BlockPos pos) {
         Box area = new Box(pos).expand(TRIGGER_RANGE);
         List<LivingEntity> hosts = world.getEntitiesByClass(LivingEntity.class, area,
-                e -> Alien.canHost(e) && (e instanceof PlayerEntity || e instanceof net.minecraft.entity.passive.MerchantEntity));
+                e -> Alien.canHost(e) && (e instanceof PlayerEntity || e instanceof net.minecraft.entity.passive.MerchantEntity
+                        || e instanceof de.hiveinvasion.human.HumanEntity || e instanceof de.hiveinvasion.hive.CocoonEntity));
         if (hosts.isEmpty()) return false;
 
         world.setBlockState(pos, state.with(OPEN, true));

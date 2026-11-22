@@ -34,7 +34,13 @@ public class HiveInvasionClient implements ClientModInitializer {
                 new AlienRenderer<>(ctx, new ClingerModel<>(ctx.getPart(ClingerModel.LAYER)), 0.35f, "clinger", 1.0f));
         EntityRendererRegistry.register(ModEntities.LARVA, ctx ->
                 new AlienRenderer<>(ctx, new LarvaModel<>(ctx.getPart(LarvaModel.LAYER)), 0.25f, "larva", 1.0f));
+        EntityModelLayerRegistry.registerModelLayer(de.hiveinvasion.client.model.QueenModel.LAYER, de.hiveinvasion.client.model.QueenModel::getTexturedModelData);
+        EntityModelLayerRegistry.registerModelLayer(de.hiveinvasion.client.render.CocoonRenderer.SHELL, de.hiveinvasion.client.model.GenModels::cocoon);
+        EntityRendererRegistry.register(ModEntities.QUEEN, de.hiveinvasion.client.render.QueenRenderer::new);
+        EntityRendererRegistry.register(ModEntities.COCOON, de.hiveinvasion.client.render.CocoonRenderer::new);
         EntityRendererRegistry.register(ModEntities.CORPSE, CorpseRenderer::new);
+        EntityRendererRegistry.register(ModEntities.CIVILIAN, de.hiveinvasion.client.render.HumanRenderer::new);
+        EntityRendererRegistry.register(ModEntities.SOLDIER, de.hiveinvasion.client.render.HumanRenderer::new);
         EntityRendererRegistry.register(ModEntities.SEVERED_LIMB, de.hiveinvasion.client.render.SeveredLimbRenderer::new);
         EntityRendererRegistry.register(ModEntities.EXO_SUIT, ExoSuitRenderer::new);
         EntityRendererRegistry.register(ModEntities.EXO_RACK, de.hiveinvasion.client.render.ExoRackRenderer::new);
@@ -43,6 +49,7 @@ public class HiveInvasionClient implements ClientModInitializer {
         ParticleFactoryRegistry particles = ParticleFactoryRegistry.getInstance();
         particles.register(ModParticles.BLOOD, s -> new BloodParticle.Factory(s, 0.55f, 0.02f, 0.02f, false, 0.9f));
         particles.register(ModParticles.ACID_BLOOD, s -> new BloodParticle.Factory(s, 0.6f, 0.95f, 0.15f, true, 0.9f));
+        particles.register(ModParticles.TRACER, s -> new BloodParticle.Factory(s, 1.0f, 0.85f, 0.4f, true, 0.0f));
         particles.register(ModParticles.PLASMA, s -> new BloodParticle.Factory(s, 0.4f, 0.85f, 1.0f, true, 0.0f));
 
         BlockRenderLayerMap.INSTANCE.putBlocks(RenderLayer.getCutout(), ModBlocks.BLOOD_PUDDLE, ModBlocks.ACID_PUDDLE);
@@ -51,5 +58,6 @@ public class HiveInvasionClient implements ClientModInitializer {
         ExoClient.register();
         ClientGore.register();
         Scanner.register();
+        MilitaryClient.register();
     }
 }

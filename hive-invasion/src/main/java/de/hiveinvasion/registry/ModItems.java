@@ -33,6 +33,16 @@ public final class ModItems {
             net.minecraft.item.ToolMaterials.IRON, new Item.Settings().attributeModifiers(
                     net.minecraft.item.SwordItem.createAttributeModifiers(net.minecraft.item.ToolMaterials.IRON, 1, -1.6f))));
 
+    public static final Item RADIO = register("radio", new Item(new Item.Settings().maxCount(1)));
+    public static final Item RIFLE = register("rifle", new de.hiveinvasion.human.RifleItem(new Item.Settings().maxCount(1)));
+    public static final Item CIVILIAN_SPAWN_EGG = register("civilian_spawn_egg",
+            new SpawnEggItem(ModEntities.CIVILIAN, 0xC9A27E, 0x3A5A8C, new Item.Settings()));
+    public static final Item SOLDIER_SPAWN_EGG = register("soldier_spawn_egg",
+            new SpawnEggItem(ModEntities.SOLDIER, 0x56603E, 0x2E3324, new Item.Settings()));
+
+    public static final Item QUEEN_SPAWN_EGG = register("queen_spawn_egg",
+            new SpawnEggItem(ModEntities.QUEEN, 0x0E1014, 0x5A7A3A, new Item.Settings()));
+
     public static final ItemGroup GROUP = Registry.register(Registries.ITEM_GROUP, HiveInvasion.id("main"),
             FabricItemGroup.builder()
                     .displayName(Text.translatable("itemGroup.hiveinvasion.main"))
@@ -40,13 +50,20 @@ public final class ModItems {
                     .entries((ctx, entries) -> {
                         entries.add(ModBlocks.BROOD_POD);
                         entries.add(ModBlocks.HIVE_RESIN);
+                        entries.add(ModBlocks.HIVE_RIBS);
+                        entries.add(ModBlocks.HIVE_GLOW);
                         entries.add(COMBAT_KNIFE);
+                        entries.add(RIFLE);
+                        entries.add(RADIO);
                         entries.add(EXO_SUIT);
                         entries.add(EXO_RACK);
                         entries.add(EXO_TRIGGER);
                         entries.add(CLINGER_SPAWN_EGG);
                         entries.add(LARVA_SPAWN_EGG);
                         entries.add(STALKER_SPAWN_EGG);
+                        entries.add(CIVILIAN_SPAWN_EGG);
+                        entries.add(SOLDIER_SPAWN_EGG);
+                        entries.add(QUEEN_SPAWN_EGG);
                     })
                     .build());
 

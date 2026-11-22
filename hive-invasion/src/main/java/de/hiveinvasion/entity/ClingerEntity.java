@@ -24,6 +24,9 @@ import net.minecraft.world.World;
  * und pflanzt eine Larve ein. Danach stirbt er.
  */
 public class ClingerEntity extends HostileEntity implements Alien {
+    @org.jetbrains.annotations.Nullable private net.minecraft.util.math.BlockPos raidTarget;
+
+    public void setRaidTarget(net.minecraft.util.math.BlockPos t) { this.raidTarget = t; }
     /** Zeit bis die Larve schlüpft (Ticks). 2400 = 2 Minuten. */
     public static final int INCUBATION_TICKS = 2400;
 
@@ -45,6 +48,15 @@ public class ClingerEntity extends HostileEntity implements Alien {
         this.goalSelector.add(1, new SwimGoal(this));
         this.goalSelector.add(2, new PounceAtTargetGoal(this, 0.45f));
         this.goalSelector.add(3, new MeleeAttackGoal(this, 1.3, true));
+        this.goalSelector.add(4, new Goal() {
+            { setControls(java.util.EnumSet.of(Control.MOVE)); }
+            @Override public boolean canStart() { return raidTarget != null && getTarget() == null; }
+            @Override public void tick() {
+                if (raidTarget.isWithinDistance(getPos(), 20)) { raidTarget = null; return; }
+                if (getNavigation().isIdle()) de.hiveinvasion.human.Navigation.moveToward(ClingerEntity.this,
+                        net.minecraft.util.math.Vec3d.ofBottomCenter(raidTarget), 1.2);
+            }
+        });
         this.goalSelector.add(5, new WanderAroundFarGoal(this, 0.8));
         this.goalSelector.add(6, new LookAroundGoal(this));
         this.targetSelector.add(1, new ActiveTargetGoal<>(this, PlayerEntity.class, true, Alien::canHost));

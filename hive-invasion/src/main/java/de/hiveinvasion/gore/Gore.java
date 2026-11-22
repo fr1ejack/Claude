@@ -61,7 +61,7 @@ public final class Gore {
     /** Lässt sich dieses Lebewesen zerlegen? (Modelle mit einzelnen Gliedern) */
     public static boolean canSever(LivingEntity e) {
         return e instanceof ZombieEntity || e instanceof AbstractSkeletonEntity || e instanceof AbstractPiglinEntity
-                || e instanceof StalkerEntity;
+                || e instanceof StalkerEntity || e instanceof de.hiveinvasion.human.HumanEntity;
     }
 
     public static boolean isKnife(ItemStack stack) {

@@ -10,6 +10,7 @@ public final class ModParticles {
     public static final SimpleParticleType BLOOD = register("blood");
     public static final SimpleParticleType ACID_BLOOD = register("acid_blood");
     public static final SimpleParticleType PLASMA = register("plasma");
+    public static final SimpleParticleType TRACER = register("tracer");
 
     private ModParticles() {}
 

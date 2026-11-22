@@ -7,6 +7,20 @@ Säureblut, Nestern – und später Städte, Militär, Fahrzeuge und Cutscenes.
 
 Clips: [Anlegen am Gestell](docs/media/clip-gestell-anlegen-v0.3.mp4) · [Kampfmesser](docs/media/clip-messer-abtrennen-v0.3.mp4) · [Flammenwerfer](docs/media/clip-flammenwerfer-v0.3.mp4) · [Ragdoll-Leichen](docs/media/clip-ragdoll-v0.3.mp4)
 
+## Neu in Version 0.4
+
+![Stadt](docs/media/stadt-skyline-v0.4.png)
+
+| Inhalt | Was es tut |
+|---|---|
+| **Zufällige Städte** | Die Welt ist in Regionen (640 × 640) eingeteilt; jede hat eine Stadt an zufälliger Stelle (die erste ca. 200 Blöcke vom Spawn). Kommt ein Spieler nahe, wird sie ohne Ruckeln Stück für Stück gebaut: Hochhäuser mit Glasfassaden in der Mitte, Wohnblöcke mit Balkonen, Einfamilienhäuser mit Satteldach, Parks, Straßenraster mit Mittellinien, Zebrastreifen, Laternen und geparkten Autos. Gelände wird eingeebnet, mit Böschung zum Umland. |
+| **Militärstützpunkt** | An jeder Stadt: Betonmauer mit Stacheldraht, Tor mit Wachhäuschen, vier Wachtürme, Kaserne, Hauptquartier, Hubschrauberplatz, Sandsäcke, Fahne. 12 Soldaten, davon 2 Torwachen. |
+| **Zivilisten & Soldaten** | Menschen mit eigenen, schattierten Skins. Zivilisten laufen herum, fliehen vor Aliens und können infiziert werden. Soldaten schießen mit Sturmgewehren (Leuchtspur, Mündungsfeuer, Einschläge) auf Aliens und Infizierte kurz vor dem Ausbruch. |
+| **Militär beitreten** | Rechtsklick auf die Torwache: **beitreten** oder **angreifen** (der Stützpunkt wird dann feindlich). Beitritt: 10 Soldaten + **Funkgerät**. Rechtsklick mit dem Funkgerät auf ein Ziel (Alien, Ort): **Mir folgen / Dorthin gehen / Zurück zum Stützpunkt / Angreifen**. |
+| **Alien-Nester** | Zu jeder Stadt ein unterirdisches Nest: Königinnenkammer, Eierkammer, Kokonkammer mit lebenden Menschen an den Wänden, zwei Ruhekammern, organische Harztunnel mit Leuchtsäcken, 1–2 Ausgänge außerhalb der Stadt. Die **Königin** (Endgegner, Lebensbalken) legt Eier, Stalker tragen sie in die Eier- und in die Kokonkammer, dort werden Gefangene infiziert. Kokons aufschlagen befreit Gefangene. |
+| **Stadtangriffe** | Alle 30–60 Minuten (erstmals 5 Minuten nach dem Bau) greift das Nest die Stadt an: ALARM-Titel, Sirene, Aliens strömen aus dem Ausgang. |
+| **Befehle** | `/hiveinvasion stadt` (nächste Stadt, Stützpunkt, Nestkammern), `/hiveinvasion angriff` (Angriff sofort auslösen). |
+
 ## Neu in Version 0.3
 
 | Inhalt | Was es tut |
@@ -48,7 +62,7 @@ Clips: [Anlegen am Gestell](docs/media/clip-gestell-anlegen-v0.3.mp4) · [Kampfm
 
 ## Fahrplan
 
-**Als Nächstes:** Militärbasis mit Tor, Wache zum Reden oder Angreifen, Beitritt mit 10 Soldaten und Funkgerät (Folgen / Dorthin / Zurück zur Basis / Angreifen).
+**Als Nächstes:** Fahrzeuge (Truppentransporter, Hubschrauber), Cutscenes, bessere Wegfindung beim Angriff.
 
 
 1. **Phase 1 – Die Brut** ✅ Kapsel, Klammerer, Larve, Stalker, Säureblut

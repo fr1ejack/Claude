@@ -343,10 +343,71 @@ def exorack():
     return [parts], 256, 128
 
 
+def queen():
+    """Königin: riesiger Körper, Krone aus Panzerplatten, zwei große und zwei kleine Arme,
+    vier Vogelbeine, langer Schwanz, gewaltiger Eiersack hinten."""
+    def leg(name, x, z):
+        s = 1 if x > 0 else -1
+        return Part(name, (x, 4, z), (R(-30), 0, R(-10) * s), [Cube(-2.5, 0, -2.5, 5, 10, 5, "carapace")], [
+            Part(name + "_shin", (0, 9.5, 0), (R(70), 0, 0), [Cube(-1.8, 0, -1.8, 3.6, 10, 3.6, "ribbed")], [
+                Part(name + "_foot", (0, 9.5, 0), (R(-40), 0, 0), [Cube(-2.5, 0, -6, 5, 2, 8, "claw")])])])
+
+    def arm(name, x, y, big):
+        s = 1 if x > 0 else -1
+        w = 4 if big else 2.4
+        L = 14 if big else 8
+        return Part(name, (x, y, -2), (R(-35), 0, R(-15) * s), [Cube(-w / 2, -1, -w / 2, w, L, w, "carapace")], [
+            Part(name + "_fore", (0, L - 1, 0), (R(-40), 0, 0), [Cube(-w / 2.5, 0, -w / 2.5, w / 1.25, L, w / 1.25, "ribbed")], [
+                Part(name + "_hand", (0, L, 0), (0, 0, 0), [
+                    Cube(-w / 2, 0, -w / 2, w, 2, w, "carapace"),
+                    Cube(-w / 2, 2, -w / 2, 0.8, L * 0.4, 0.8, "claw"), Cube(w / 2 - 0.8, 2, -w / 2, 0.8, L * 0.4, 0.8, "claw"),
+                    Cube(-0.4, 2, -w / 2, 0.8, L * 0.45, 0.8, "claw")])])])
+
+    def tail(i):
+        size = max(1.2, 4.5 - i * 0.45)
+        kids = [tail(i + 1)] if i < 7 else [Part("tail_blade", (0, 0, 7), (0, 0, 0), [Cube(-0.4, -3, 0, 0.8, 6, 7, "claw")])]
+        return Part(f"tail{i}", (0, 0, 7 if i else 6), (R(10) if i else R(-25), 0, 0),
+                    [Cube(-size / 2, -size / 2, 0, size, size, 7.5, "ribbed" if i % 2 else "carapace")], kids)
+
+    head = Part("head", (0, -18, -9), (R(-20), 0, 0), [
+        Cube(-4, -4, -11, 8, 6, 11, "carapace2"),                 # Schnauze/Gesicht
+        Cube(-3.5, 1.5, -11.2, 7, 1.2, 1.5, "teeth"),
+        Cube(-3.6, -3, -11.6, 7.2, 4.5, 1, "gum"),
+        Cube(-10, -14, -2, 20, 12, 3, "carapace"),                # Krone (Schild)
+        Cube(-8, -18, -1, 16, 5, 2.5, "carapace2"),
+        Cube(-5, -21, 0, 10, 4, 2, "carapace"),
+        Cube(-12, -10, -1, 3, 8, 2, "ribbed"), Cube(9, -10, -1, 3, 8, 2, "ribbed")], [
+        Part("jaw", (0, 2, -1), (R(10), 0, 0), [Cube(-3.5, 0, -10, 7, 2, 10, "carapace"), Cube(-3.3, -1, -10.1, 6.6, 1, 1.5, "teeth")])])
+    body = Part("body", (0, 2, 0), (R(-15), 0, 0), [
+        Cube(-6, -10, -8, 12, 12, 14, "ribbed"),                  # Thorax
+        Cube(-5, -20, -10, 10, 11, 9, "carapace2"),               # Brust/Hals
+        Cube(-1.5, -22, -4, 3, 22, 14, "carapace"),               # Rückenkamm
+        Cube(-7, -14, 0, 3, 3, 10, "tube"), Cube(4, -14, 0, 3, 3, 10, "tube")], [
+        head, arm("left_arm", 6, -16, True), arm("right_arm", -6, -16, True),
+        arm("left_small", 3.5, -11, False), arm("right_small", -3.5, -11, False),
+        Part("sac", (0, -2, 6), (R(5), 0, 0), [                  # Eiersack
+            Cube(-7, -6, 0, 14, 12, 18, "flesh"), Cube(-5, -5, 18, 10, 9, 8, "flesh"), Cube(-6.5, -7, 2, 13, 2, 14, "ribbed")]),
+        tail(0)])
+    return [leg("left_leg", 5, 4), leg("right_leg", -5, 4), leg("left_hind", 6, 12), leg("right_hind", -6, 12), body], 256, 256
+
+
+def cocoon():
+    """Harzhülle um einen an die Wand geklebten Menschen (Gesicht frei)."""
+    shell = Part("shell", (0, 24, 0), (0, 0, 0), [
+        Cube(-6, -34, 2, 12, 34, 4, "carapace"),        # Rückwand
+        Cube(-5.5, -16, -2.6, 3, 6, 4.8, "carapace2"), Cube(2.5, -18, -2.6, 3, 8, 4.8, "carapace2"),   # Harzbänder Bauch
+        Cube(-4.5, -9, -3, 9, 9, 5.5, "carapace"),       # Beine eingegossen
+        Cube(-5, -38, -2.5, 10, 5, 4.5, "carapace2"),    # Hände über dem Kopf
+        Cube(-6.5, -30, -1.5, 2.5, 18, 4, "ribbed"), Cube(4, -30, -1.5, 2.5, 18, 4, "ribbed"),
+        Cube(-1, -40, 2, 2, 7, 2, "tube"), Cube(-4, -38, 3, 1.5, 6, 1.5, "tube"), Cube(3, -39, 3, 1.5, 7, 1.5, "tube"),
+        Cube(-7, -4, -1, 14, 4, 6, "ribbed")])
+    return [shell], 128, 64
+
+
 def main():
     random.seed(1)
     methods = []
-    for name, fn, seed in [("stalker", stalker, 3), ("clinger", clinger, 5), ("larva", larva, 9), ("exosuit", exosuit, 11), ("exorack", exorack, 13)]:
+    for name, fn, seed in [("stalker", stalker, 3), ("clinger", clinger, 5), ("larva", larva, 9), ("exosuit", exosuit, 11), ("exorack", exorack, 13), ("queen", queen, 17), ("cocoon", cocoon, 19)]:
         roots, tw, th = fn()
         holder = Part(name, children=roots)
         pack(holder, tw, th)
@@ -358,7 +419,7 @@ def main():
            "package de.hiveinvasion.client.model;\n\nimport net.minecraft.client.model.*;\n\n"
            "public final class GenModels {\n    private GenModels() {}\n\n" + "\n\n".join(methods) + "\n}\n")
     open(JAVA, "w").write(src)
-    print("Modelle erzeugt:", ", ".join(n for n in ["stalker", "clinger", "larva", "exosuit", "exorack"]))
+    print("Modelle erzeugt:", ", ".join(n for n in ["stalker", "clinger", "larva", "exosuit", "exorack", "queen", "cocoon"]))
 
 
 if __name__ == "__main__":

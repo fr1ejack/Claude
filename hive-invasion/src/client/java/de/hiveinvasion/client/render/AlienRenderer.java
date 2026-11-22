@@ -28,6 +28,22 @@ public class AlienRenderer<T extends MobEntity, M extends EntityModel<T>> extend
     }
 
     @Override
+    public void render(T entity, float yaw, float tickDelta, MatrixStack matrices, net.minecraft.client.render.VertexConsumerProvider consumers, int light) {
+        super.render(entity, yaw, tickDelta, matrices, consumers, light);
+        if (entity instanceof de.hiveinvasion.entity.StalkerEntity s && s.isCarrying()) {
+            matrices.push();
+            float body = net.minecraft.util.math.MathHelper.lerpAngleDegrees(tickDelta, entity.prevBodyYaw, entity.bodyYaw);
+            matrices.multiply(net.minecraft.util.math.RotationAxis.POSITIVE_Y.rotationDegrees(-body));
+            matrices.translate(-0.3, 0.95, 0.75);
+            matrices.scale(0.6f, 0.6f, 0.6f);
+            net.minecraft.client.MinecraftClient.getInstance().getBlockRenderManager().renderBlockAsEntity(
+                    de.hiveinvasion.registry.ModBlocks.BROOD_POD.getDefaultState(), matrices, consumers, light,
+                    net.minecraft.client.render.OverlayTexture.DEFAULT_UV);
+            matrices.pop();
+        }
+    }
+
+    @Override
     protected void scale(T entity, MatrixStack matrices, float amount) {
         matrices.scale(scale, scale, scale);
     }

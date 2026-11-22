@@ -27,6 +27,11 @@ public final class ModBlocks {
             .strength(2.5f, 4.0f)
             .sounds(BlockSoundGroup.HONEY)));
 
+    public static final Block HIVE_RIBS = register("hive_ribs", new Block(AbstractBlock.Settings.create()
+            .mapColor(MapColor.BLACK).strength(2.5f, 4.0f).sounds(BlockSoundGroup.HONEY)));
+    public static final Block HIVE_GLOW = register("hive_glow", new Block(AbstractBlock.Settings.create()
+            .mapColor(MapColor.LIME).strength(1.0f).sounds(BlockSoundGroup.SLIME).luminance(s -> 10)));
+
     /** Blutlachen – kein Item, entstehen nur durch Verletzungen. */
     public static final Block BLOOD_PUDDLE = registerNoItem("blood_puddle", new BloodPuddleBlock(puddle(MapColor.DARK_RED), false));
     public static final Block ACID_PUDDLE = registerNoItem("acid_puddle", new BloodPuddleBlock(puddle(MapColor.LIME).luminance(s -> 4), true));

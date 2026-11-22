@@ -6,6 +6,8 @@ import de.hiveinvasion.entity.CorpseEntity;
 import de.hiveinvasion.exo.ExoRackEntity;
 import de.hiveinvasion.exo.ExoSuitEntity;
 import de.hiveinvasion.gore.SeveredLimbEntity;
+import de.hiveinvasion.human.CivilianEntity;
+import de.hiveinvasion.human.SoldierEntity;
 import de.hiveinvasion.exo.PlasmaBoltEntity;
 import de.hiveinvasion.entity.LarvaEntity;
 import de.hiveinvasion.entity.StalkerEntity;
@@ -47,6 +49,16 @@ public final class ModEntities {
     public static final EntityType<ExoRackEntity> EXO_RACK = register("exo_rack",
             EntityType.Builder.<ExoRackEntity>create(ExoRackEntity::new, SpawnGroup.MISC).dimensions(1.3f, 0.2f).maxTrackingRange(10));
 
+    public static final EntityType<CivilianEntity> CIVILIAN = register("civilian",
+            EntityType.Builder.create(CivilianEntity::new, SpawnGroup.CREATURE).dimensions(0.6f, 1.8f).eyeHeight(1.62f).maxTrackingRange(10));
+    public static final EntityType<SoldierEntity> SOLDIER = register("soldier",
+            EntityType.Builder.create(SoldierEntity::new, SpawnGroup.CREATURE).dimensions(0.6f, 1.8f).eyeHeight(1.62f).maxTrackingRange(10));
+
+    public static final EntityType<de.hiveinvasion.hive.QueenEntity> QUEEN = register("queen",
+            EntityType.Builder.create(de.hiveinvasion.hive.QueenEntity::new, SpawnGroup.MONSTER).dimensions(2.4f, 4.2f).maxTrackingRange(12));
+    public static final EntityType<de.hiveinvasion.hive.CocoonEntity> COCOON = register("cocoon",
+            EntityType.Builder.create(de.hiveinvasion.hive.CocoonEntity::new, SpawnGroup.MISC).dimensions(0.8f, 1.9f).maxTrackingRange(8));
+
     private ModEntities() {}
 
     private static <T extends net.minecraft.entity.Entity> EntityType<T> register(String name, EntityType.Builder<T> builder) {
@@ -58,6 +70,10 @@ public final class ModEntities {
         FabricDefaultAttributeRegistry.register(LARVA, LarvaEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(STALKER, StalkerEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(EXO_SUIT, ExoSuitEntity.createAttributes());
+        FabricDefaultAttributeRegistry.register(QUEEN, de.hiveinvasion.hive.QueenEntity.createAttributes());
+        FabricDefaultAttributeRegistry.register(COCOON, de.hiveinvasion.hive.CocoonEntity.createAttributes());
+        FabricDefaultAttributeRegistry.register(CIVILIAN, CivilianEntity.createAttributes());
+        FabricDefaultAttributeRegistry.register(SOLDIER, SoldierEntity.createAttributes());
 
         SpawnRestriction.register(STALKER, SpawnLocationTypes.ON_GROUND, Heightmap.Type.MOTION_BLOCKING_NO_LEAVES,
                 HostileEntity::canSpawnInDark);

@@ -46,6 +46,9 @@ public class HiveInvasion implements ModInitializer {
         ModItems.register();
 
         de.hiveinvasion.gore.Gore.register();
+        de.hiveinvasion.world.WorldDirector.register();
+        de.hiveinvasion.military.MilitaryNet.register();
+        de.hiveinvasion.world.HiveCommands.register();
         PayloadTypeRegistry.playS2C().register(de.hiveinvasion.net.ScanPayload.ID, de.hiveinvasion.net.ScanPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(de.hiveinvasion.gore.SeveredPayload.ID, de.hiveinvasion.gore.SeveredPayload.CODEC);
 
@@ -103,7 +106,8 @@ public class HiveInvasion implements ModInitializer {
         if (e instanceof EnderDragonEntity || e instanceof WitherEntity || e instanceof SlimeEntity
                 || e instanceof VexEntity || e instanceof AllayEntity || e instanceof BatEntity
                 || e instanceof GhastEntity || e instanceof PhantomEntity || e instanceof ClingerEntity
-                || e instanceof ExoSuitEntity) return false;
+                || e instanceof ExoSuitEntity || e instanceof de.hiveinvasion.hive.CocoonEntity
+                || e instanceof de.hiveinvasion.hive.QueenEntity) return false;
         float w = e.getWidth();
         return w >= 0.35f && w <= 2.0f;
     }
