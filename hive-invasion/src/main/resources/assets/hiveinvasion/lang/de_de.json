@@ -25,5 +25,13 @@
   "container.hiveinvasion.corpse_of": "Leiche von %s",
   "message.hiveinvasion.exo_online": "Exo-Anzug: Alle Systeme online",
   "message.hiveinvasion.exo_hint": "Stell dich mit dem Rücken vor den Anzug und drück den Auslöser (oder den roten Knopf am Anzug)",
-  "message.hiveinvasion.exo_critical": "WARNUNG: Panzerung kritisch!"
+  "message.hiveinvasion.exo_critical": "WARNUNG: Panzerung kritisch!",
+  "item.hiveinvasion.combat_knife": "Kampfmesser",
+  "entity.hiveinvasion.severed_limb": "Abgetrenntes Körperteil",
+  "hud.hiveinvasion.exo_enter": "[%s] Anzug anlegen",
+  "item.hiveinvasion.exo_rack": "Anzug-Gestell",
+  "entity.hiveinvasion.exo_rack": "Anzug-Gestell",
+  "key.hiveinvasion.shield": "Exo: Energieschild",
+  "key.hiveinvasion.scanner": "Exo: Scanner an/aus",
+  "category.hiveinvasion": "Hive Invasion"
 }

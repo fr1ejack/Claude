@@ -43,16 +43,22 @@ import java.util.UUID;
  * (Rechtsklick halten), Sprungdüsen (Leertaste halten). Schleichen = aussteigen.
  */
 public class ExoSuitEntity extends MobEntity {
-    public static final int ASSEMBLE_TICKS = 70;
+    public static final int ASSEMBLE_TICKS = 120;
     public static final float MAX_ENERGY = 100f;
 
     private static final TrackedData<Integer> PROGRESS = DataTracker.registerData(ExoSuitEntity.class, TrackedDataHandlerRegistry.INTEGER);
     private static final TrackedData<Float> ENERGY = DataTracker.registerData(ExoSuitEntity.class, TrackedDataHandlerRegistry.FLOAT);
     private static final TrackedData<Boolean> SHIELD = DataTracker.registerData(ExoSuitEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+    private static final TrackedData<Boolean> FLAME = DataTracker.registerData(ExoSuitEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
     private static final TrackedData<Boolean> BOOST = DataTracker.registerData(ExoSuitEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+    private static final TrackedData<Float> START_DX = DataTracker.registerData(ExoSuitEntity.class, TrackedDataHandlerRegistry.FLOAT);
+    private static final TrackedData<Float> START_DZ = DataTracker.registerData(ExoSuitEntity.class, TrackedDataHandlerRegistry.FLOAT);
+    private static final TrackedData<Float> START_YAW = DataTracker.registerData(ExoSuitEntity.class, TrackedDataHandlerRegistry.FLOAT);
+    private static final TrackedData<Boolean> DOCKED = DataTracker.registerData(ExoSuitEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
     private static final TrackedData<Optional<UUID>> ASSEMBLER = DataTracker.registerData(ExoSuitEntity.class, TrackedDataHandlerRegistry.OPTIONAL_UUID);
 
-    private boolean inFire, inShield, inBoost;
+    private boolean inFire, inFlame, inShield, inBoost;
+    private boolean leftBarrel;
     private int fireCooldown;
     /** Nur Client: Fortschritt im vorigen Tick, für flüssige Animation. */
     public int lastProgress;
@@ -67,7 +73,7 @@ public class ExoSuitEntity extends MobEntity {
                 .add(EntityAttributes.GENERIC_MAX_HEALTH, 150.0)
                 .add(EntityAttributes.GENERIC_ARMOR, 14.0)
                 .add(EntityAttributes.GENERIC_ARMOR_TOUGHNESS, 4.0)
-                .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.30)
+                .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.11)
                 .add(EntityAttributes.GENERIC_KNOCKBACK_RESISTANCE, 0.9)
                 .add(EntityAttributes.GENERIC_STEP_HEIGHT, 1.1)
                 .add(EntityAttributes.GENERIC_SAFE_FALL_DISTANCE, 14.0);
@@ -80,14 +86,24 @@ public class ExoSuitEntity extends MobEntity {
         builder.add(ENERGY, MAX_ENERGY);
         builder.add(SHIELD, false);
         builder.add(BOOST, false);
+        builder.add(FLAME, false);
         builder.add(ASSEMBLER, Optional.empty());
+        builder.add(START_DX, 0f);
+        builder.add(START_DZ, 0f);
+        builder.add(START_YAW, 0f);
+        builder.add(DOCKED, false);
     }
 
     public int getProgress() { return dataTracker.get(PROGRESS); }
     public float getEnergy() { return dataTracker.get(ENERGY); }
     public boolean isShieldActive() { return dataTracker.get(SHIELD); }
+    public boolean isFlaming() { return dataTracker.get(FLAME); }
     public boolean isBoosting() { return dataTracker.get(BOOST); }
     public Optional<UUID> getAssembler() { return dataTracker.get(ASSEMBLER); }
+    public float getStartDx() { return dataTracker.get(START_DX); }
+    public float getStartDz() { return dataTracker.get(START_DZ); }
+    public float getStartYaw() { return dataTracker.get(START_YAW); }
+    public boolean isDocked() { return dataTracker.get(DOCKED); }
     public boolean isClosed() { return getProgress() >= ASSEMBLE_TICKS; }
 
     /** 0 = ganz offen, 1 = ganz geschlossen (für die Animation). */
@@ -95,8 +111,8 @@ public class ExoSuitEntity extends MobEntity {
         return MathHelper.lerp(tickDelta, (float) lastProgress, (float) getProgress()) / ASSEMBLE_TICKS;
     }
 
-    public void setInput(boolean fire, boolean shield, boolean boost) {
-        this.inFire = fire; this.inShield = shield; this.inBoost = boost;
+    public void setInput(boolean fire, boolean flame, boolean shield, boolean boost) {
+        this.inFire = fire; this.inFlame = flame; this.inShield = shield; this.inBoost = boost;
     }
 
     // ------------------------------------------------------------------ Anlegen
@@ -118,6 +134,9 @@ public class ExoSuitEntity extends MobEntity {
 
     /** Startet die Anlege-Sequenz. */
     public void beginAssembly(ServerPlayerEntity player) {
+        dataTracker.set(START_DX, (float) (player.getX() - getX()));
+        dataTracker.set(START_DZ, (float) (player.getZ() - getZ()));
+        dataTracker.set(START_YAW, player.getYaw());
         dataTracker.set(ASSEMBLER, Optional.of(player.getUuid()));
         dataTracker.set(PROGRESS, 0);
         player.networkHandler.requestTeleport(getX(), getY(), getZ(), getYaw(), 0);
@@ -146,16 +165,18 @@ public class ExoSuitEntity extends MobEntity {
         int p = getProgress() + 1;
         dataTracker.set(PROGRESS, p);
         SoundEvent sound = switch (p) {
-            case 12 -> SoundEvents.BLOCK_IRON_DOOR_CLOSE;       // Beine
-            case 28 -> SoundEvents.BLOCK_ANVIL_LAND;            // Brust
-            case 44 -> SoundEvents.ITEM_ARMOR_EQUIP_NETHERITE.value(); // Arme
-            case 58 -> SoundEvents.BLOCK_IRON_TRAPDOOR_CLOSE;   // Helm
-            case ASSEMBLE_TICKS -> SoundEvents.BLOCK_BEACON_ACTIVATE;
+            case 38 -> SoundEvents.BLOCK_IRON_DOOR_CLOSE;                 // Stiefel klemmen
+            case 54 -> SoundEvents.ITEM_ARMOR_EQUIP_NETHERITE.value();    // Handschuhe
+            case 68 -> SoundEvents.BLOCK_PISTON_CONTRACT;                 // Armschalen
+            case 84 -> SoundEvents.BLOCK_IRON_DOOR_CLOSE;                 // Beinschalen
+            case 99 -> SoundEvents.BLOCK_ANVIL_LAND;                      // Brustpanzer
+            case 111 -> SoundEvents.BLOCK_IRON_TRAPDOOR_CLOSE;            // Helm
+            case ASSEMBLE_TICKS -> SoundEvents.BLOCK_BEACON_ACTIVATE;     // Visier dicht, Systeme an
             default -> null;
         };
         if (sound != null) {
-            world.playSound(null, getBlockPos(), sound, SoundCategory.PLAYERS, p == 28 ? 0.35f : 1f, p == ASSEMBLE_TICKS ? 1.6f : 0.8f);
-            world.spawnParticles(ParticleTypes.ELECTRIC_SPARK, getX(), getY() + 1.2 + p / 50.0, getZ(), 12, 0.4, 0.3, 0.4, 0.1);
+            world.playSound(null, getBlockPos(), sound, SoundCategory.PLAYERS, p == 99 ? 0.35f : 1f, p == ASSEMBLE_TICKS ? 1.6f : 0.8f);
+            world.spawnParticles(ParticleTypes.ELECTRIC_SPARK, getX(), getY() + 0.3 + p / 70.0, getZ(), 12, 0.4, 0.3, 0.4, 0.1);
         }
         if (p >= ASSEMBLE_TICKS) {
             dataTracker.set(ASSEMBLER, Optional.empty());
@@ -173,6 +194,7 @@ public class ExoSuitEntity extends MobEntity {
         }
         super.tick();
         if (getWorld() instanceof ServerWorld world) {
+            tickDocking(world);
             tickAssembly(world);
             tickSystems(world);
         } else if (isBoosting()) {
@@ -186,9 +208,24 @@ public class ExoSuitEntity extends MobEntity {
         }
     }
 
+    /** Leerer Anzug in der Nähe eines Gestells: einrasten. */
+    private void tickDocking(ServerWorld world) {
+        if (hasPassengers()) { dataTracker.set(DOCKED, false); return; }
+        ExoRackEntity rack = world.getEntitiesByClass(ExoRackEntity.class, getBoundingBox().expand(1.6, 0.5, 1.6), r -> true)
+                .stream().findFirst().orElse(null);
+        if (rack == null) { dataTracker.set(DOCKED, false); return; }
+        if (squaredDistanceTo(rack) > 0.001 || Math.abs(MathHelper.wrapDegrees(getYaw() - rack.getYaw())) > 0.5f) {
+            refreshPositionAndAngles(rack.getX(), rack.getY(), rack.getZ(), rack.getYaw(), 0);
+            setBodyYaw(rack.getYaw());
+            setHeadYaw(rack.getYaw());
+            setVelocity(Vec3d.ZERO);
+        }
+        dataTracker.set(DOCKED, true);
+    }
+
     private void tickSystems(ServerWorld world) {
         boolean manned = isClosed() && getFirstPassenger() instanceof PlayerEntity;
-        if (!manned) inFire = inShield = inBoost = false;
+        if (!manned) inFire = inFlame = inShield = inBoost = false;
         float energy = getEnergy();
 
         boolean shield = inShield && energy > 1;
@@ -198,7 +235,7 @@ public class ExoSuitEntity extends MobEntity {
 
         if (shield) energy -= 0.45f;
         if (boost && !isOnGround()) energy -= 1.1f;
-        if (!shield && !(boost && !isOnGround()) && fireCooldown <= 0) energy += 0.6f;
+        if (!shield && !inFlame && !(boost && !isOnGround()) && fireCooldown <= 0) energy += 0.6f;
 
         if (fireCooldown > 0) fireCooldown--;
         if (inFire && manned && fireCooldown <= 0 && energy >= 3 && !shield) {
@@ -206,14 +243,22 @@ public class ExoSuitEntity extends MobEntity {
             energy -= 3;
             fireCooldown = 5;
         }
+        boolean flame = inFlame && manned && energy > 0.8f && !shield;
+        dataTracker.set(FLAME, flame);
+        if (flame) {
+            flamethrower(world, (PlayerEntity) getFirstPassenger());
+            energy -= 0.55f;
+        }
         if (shield) pushBackInFront(world);
+        if (manned && age % 10 == 0 && getFirstPassenger() instanceof net.minecraft.server.network.ServerPlayerEntity sp) scan(world, sp);
         dataTracker.set(ENERGY, MathHelper.clamp(energy, 0, MAX_ENERGY));
     }
 
     private void shoot(ServerWorld world, PlayerEntity pilot) {
         Vec3d look = pilot.getRotationVec(1f);
-        Vec3d right = Vec3d.fromPolar(0, getYaw() + 90).multiply(-0.75);
-        Vec3d muzzle = new Vec3d(getX() + right.x + look.x * 0.9, getY() + 1.55 + look.y * 0.9, getZ() + right.z + look.z * 0.9);
+        leftBarrel = !leftBarrel;
+        Vec3d right = Vec3d.fromPolar(0, getYaw() + 90).multiply(leftBarrel ? -0.42 : -0.58);
+        Vec3d muzzle = new Vec3d(getX() + right.x + look.x * 0.9, getY() + 1.45 + look.y * 0.9, getZ() + right.z + look.z * 0.9);
         PlasmaBoltEntity bolt = new PlasmaBoltEntity(ModEntities.PLASMA_BOLT, world);
         bolt.setOwner(pilot);
         bolt.setPosition(muzzle);
@@ -221,6 +266,49 @@ public class ExoSuitEntity extends MobEntity {
         world.spawnEntity(bolt);
         world.playSound(null, getBlockPos(), SoundEvents.ENTITY_BLAZE_SHOOT, SoundCategory.PLAYERS, 0.7f, 1.8f);
         world.playSound(null, getBlockPos(), SoundEvents.ENTITY_FIREWORK_ROCKET_BLAST, SoundCategory.PLAYERS, 0.5f, 1.4f);
+    }
+
+    /** Flammenwerfer am linken Unterarm: Flammenkegel, setzt Ziele in Brand. */
+    private void flamethrower(ServerWorld world, PlayerEntity pilot) {
+        Vec3d look = pilot.getRotationVec(1f);
+        Vec3d left = Vec3d.fromPolar(0, getYaw() + 90).multiply(0.5);
+        Vec3d nozzle = new Vec3d(getX() + left.x + look.x * 0.8, getY() + 1.2 + look.y * 0.8, getZ() + left.z + look.z * 0.8);
+        var r = getRandom();
+        for (int i = 0; i < 26; i++) {
+            double spread = 0.16;
+            Vec3d v = look.add((r.nextDouble() - 0.5) * spread, (r.nextDouble() - 0.5) * spread, (r.nextDouble() - 0.5) * spread)
+                    .multiply(0.55 + r.nextDouble() * 0.35);
+            world.spawnParticles(i % 6 == 0 ? ParticleTypes.LARGE_SMOKE : i % 5 == 0 ? ParticleTypes.LAVA : ParticleTypes.FLAME,
+                    nozzle.x + v.x * r.nextDouble() * 3, nozzle.y + v.y * r.nextDouble() * 3, nozzle.z + v.z * r.nextDouble() * 3, 0, v.x, v.y, v.z, 1.0);
+        }
+        if (age % 5 == 0) world.playSound(null, getBlockPos(), SoundEvents.ITEM_FIRECHARGE_USE, SoundCategory.PLAYERS, 0.6f, 0.6f + r.nextFloat() * 0.2f);
+        if (age % 4 != 0) return;
+        var fireEntry = world.getRegistryManager().get(net.minecraft.registry.RegistryKeys.DAMAGE_TYPE)
+                .entryOf(net.minecraft.entity.damage.DamageTypes.ON_FIRE);
+        for (LivingEntity e : world.getEntitiesByClass(LivingEntity.class, getBoundingBox().expand(7), e -> e != this && e != pilot)) {
+            Vec3d to = e.getPos().add(0, e.getHeight() / 2, 0).subtract(nozzle);
+            double dist = to.length();
+            if (dist > 7 || dist < 0.01 || to.normalize().dotProduct(look) < 0.9) continue;
+            e.setOnFireFor(6);
+            e.damage(new DamageSource(fireEntry, this, pilot), 3.0f);
+        }
+        // Brennbares am Ende des Strahls anzünden
+        if (r.nextFloat() < 0.08f && world.getGameRules().getBoolean(net.minecraft.world.GameRules.DO_FIRE_TICK)) {
+            var hit = world.raycast(new net.minecraft.world.RaycastContext(nozzle, nozzle.add(look.multiply(6)),
+                    net.minecraft.world.RaycastContext.ShapeType.COLLIDER, net.minecraft.world.RaycastContext.FluidHandling.NONE, this));
+            if (hit.getType() == net.minecraft.util.hit.HitResult.Type.BLOCK) {
+                var firePos = hit.getBlockPos().offset(hit.getSide());
+                if (world.isAir(firePos)) world.setBlockState(firePos, net.minecraft.block.Blocks.FIRE.getDefaultState());
+            }
+        }
+    }
+
+    /** Visier-Scanner: schickt dem Piloten, wer in der Nähe infiziert ist. */
+    private void scan(ServerWorld world, net.minecraft.server.network.ServerPlayerEntity pilot) {
+        java.util.List<Integer> ids = new java.util.ArrayList<>();
+        for (LivingEntity e : world.getEntitiesByClass(LivingEntity.class, getBoundingBox().expand(48),
+                e -> e.hasStatusEffect(de.hiveinvasion.registry.ModEffects.PARASITE))) ids.add(e.getId());
+        net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.send(pilot, new de.hiveinvasion.net.ScanPayload(ids));
     }
 
     /** Der Schild schiebt Gegner vor dem Anzug weg. */
@@ -271,7 +359,7 @@ public class ExoSuitEntity extends MobEntity {
 
     @Override
     protected Vec3d getPassengerAttachmentPos(Entity passenger, EntityDimensions dimensions, float scaleFactor) {
-        return new Vec3d(0, 1.4, 0);
+        return new Vec3d(0, 1.0, 0);
     }
 
     @Override

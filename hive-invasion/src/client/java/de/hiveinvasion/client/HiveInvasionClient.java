@@ -26,6 +26,7 @@ public class HiveInvasionClient implements ClientModInitializer {
         EntityModelLayerRegistry.registerModelLayer(ClingerModel.LAYER, ClingerModel::getTexturedModelData);
         EntityModelLayerRegistry.registerModelLayer(LarvaModel.LAYER, LarvaModel::getTexturedModelData);
         EntityModelLayerRegistry.registerModelLayer(ExoSuitModel.LAYER, ExoSuitModel::getTexturedModelData);
+        EntityModelLayerRegistry.registerModelLayer(de.hiveinvasion.client.model.ExoRackModel.LAYER, de.hiveinvasion.client.model.ExoRackModel::getTexturedModelData);
 
         EntityRendererRegistry.register(ModEntities.STALKER, ctx ->
                 new AlienRenderer<>(ctx, new StalkerModel<>(ctx.getPart(StalkerModel.LAYER)), 0.6f, "stalker", 1.1f));
@@ -34,7 +35,9 @@ public class HiveInvasionClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.LARVA, ctx ->
                 new AlienRenderer<>(ctx, new LarvaModel<>(ctx.getPart(LarvaModel.LAYER)), 0.25f, "larva", 1.0f));
         EntityRendererRegistry.register(ModEntities.CORPSE, CorpseRenderer::new);
+        EntityRendererRegistry.register(ModEntities.SEVERED_LIMB, de.hiveinvasion.client.render.SeveredLimbRenderer::new);
         EntityRendererRegistry.register(ModEntities.EXO_SUIT, ExoSuitRenderer::new);
+        EntityRendererRegistry.register(ModEntities.EXO_RACK, de.hiveinvasion.client.render.ExoRackRenderer::new);
         EntityRendererRegistry.register(ModEntities.PLASMA_BOLT, ctx -> new FlyingItemEntityRenderer<>(ctx, 1.2f, true));
 
         ParticleFactoryRegistry particles = ParticleFactoryRegistry.getInstance();
@@ -46,5 +49,7 @@ public class HiveInvasionClient implements ClientModInitializer {
         BlockRenderLayerMap.INSTANCE.putBlocks(RenderLayer.getCutout(), ModBlocks.BROOD_POD);
 
         ExoClient.register();
+        ClientGore.register();
+        Scanner.register();
     }
 }

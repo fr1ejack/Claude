@@ -45,11 +45,24 @@ public class HiveInvasion implements ModInitializer {
         ModEntities.register();
         ModItems.register();
 
+        de.hiveinvasion.gore.Gore.register();
+        PayloadTypeRegistry.playS2C().register(de.hiveinvasion.net.ScanPayload.ID, de.hiveinvasion.net.ScanPayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(de.hiveinvasion.gore.SeveredPayload.ID, de.hiveinvasion.gore.SeveredPayload.CODEC);
+
         // Steuerung des Exo-Anzugs vom Client.
         PayloadTypeRegistry.playC2S().register(ExoInputPayload.ID, ExoInputPayload.CODEC);
         ServerPlayNetworking.registerGlobalReceiver(ExoInputPayload.ID, (payload, ctx) -> {
             if (ctx.player().getVehicle() instanceof ExoSuitEntity suit) {
-                suit.setInput(payload.fire(), payload.shield(), payload.boost());
+                suit.setInput(payload.fire(), payload.flame(), payload.shield(), payload.boost());
+            }
+        });
+
+        PayloadTypeRegistry.playC2S().register(de.hiveinvasion.exo.ExoEnterPayload.ID, de.hiveinvasion.exo.ExoEnterPayload.CODEC);
+        ServerPlayNetworking.registerGlobalReceiver(de.hiveinvasion.exo.ExoEnterPayload.ID, (payload, ctx) -> {
+            var player = ctx.player();
+            if (player.getWorld().getEntityById(payload.suitId()) instanceof ExoSuitEntity suit
+                    && suit.canBeEntered() && player.squaredDistanceTo(suit) < 9 && !player.hasVehicle()) {
+                suit.beginAssembly(player);
             }
         });
 
@@ -67,7 +80,10 @@ public class HiveInvasion implements ModInitializer {
 
         // Blut
         ServerLivingEntityEvents.AFTER_DAMAGE.register((entity, source, baseDamage, damageTaken, blocked) -> {
-            if (!blocked) BloodFx.onHurt(entity, damageTaken);
+            if (!blocked) {
+                BloodFx.onHurt(entity, damageTaken);
+                de.hiveinvasion.gore.Gore.afterHit(entity, source, damageTaken);
+            }
         });
 
         // Leichen bleiben liegen

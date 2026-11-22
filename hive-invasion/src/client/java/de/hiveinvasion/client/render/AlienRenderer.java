@@ -18,6 +18,10 @@ public class AlienRenderer<T extends MobEntity, M extends EntityModel<T>> extend
         this.scale = scale;
     }
 
+    public float getScale() {
+        return scale;
+    }
+
     @Override
     public Identifier getTexture(T entity) {
         return texture;

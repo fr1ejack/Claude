@@ -25,7 +25,13 @@ public final class ModItems {
             new ExoSuitItem(new Item.Settings().maxCount(1).rarity(Rarity.EPIC)));
     public static final Item EXO_TRIGGER = register("exo_trigger",
             new ExoTriggerItem(new Item.Settings().maxCount(1).rarity(Rarity.UNCOMMON)));
+    public static final Item EXO_RACK = register("exo_rack",
+            new de.hiveinvasion.exo.ExoRackItem(new Item.Settings().maxCount(16)));
     public static final Item PLASMA_BOLT = register("plasma_bolt", new Item(new Item.Settings()));
+
+    public static final Item COMBAT_KNIFE = register("combat_knife", new net.minecraft.item.SwordItem(
+            net.minecraft.item.ToolMaterials.IRON, new Item.Settings().attributeModifiers(
+                    net.minecraft.item.SwordItem.createAttributeModifiers(net.minecraft.item.ToolMaterials.IRON, 1, -1.6f))));
 
     public static final ItemGroup GROUP = Registry.register(Registries.ITEM_GROUP, HiveInvasion.id("main"),
             FabricItemGroup.builder()
@@ -34,7 +40,9 @@ public final class ModItems {
                     .entries((ctx, entries) -> {
                         entries.add(ModBlocks.BROOD_POD);
                         entries.add(ModBlocks.HIVE_RESIN);
+                        entries.add(COMBAT_KNIFE);
                         entries.add(EXO_SUIT);
+                        entries.add(EXO_RACK);
                         entries.add(EXO_TRIGGER);
                         entries.add(CLINGER_SPAWN_EGG);
                         entries.add(LARVA_SPAWN_EGG);

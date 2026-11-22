@@ -3,7 +3,9 @@ package de.hiveinvasion.registry;
 import de.hiveinvasion.HiveInvasion;
 import de.hiveinvasion.entity.ClingerEntity;
 import de.hiveinvasion.entity.CorpseEntity;
+import de.hiveinvasion.exo.ExoRackEntity;
 import de.hiveinvasion.exo.ExoSuitEntity;
+import de.hiveinvasion.gore.SeveredLimbEntity;
 import de.hiveinvasion.exo.PlasmaBoltEntity;
 import de.hiveinvasion.entity.LarvaEntity;
 import de.hiveinvasion.entity.StalkerEntity;
@@ -33,11 +35,17 @@ public final class ModEntities {
             EntityType.Builder.<CorpseEntity>create(CorpseEntity::new, SpawnGroup.MISC).dimensions(1.4f, 0.45f).maxTrackingRange(8));
 
     public static final EntityType<ExoSuitEntity> EXO_SUIT = register("exo_suit",
-            EntityType.Builder.create(ExoSuitEntity::new, SpawnGroup.MISC).dimensions(1.0f, 2.7f).maxTrackingRange(10));
+            EntityType.Builder.create(ExoSuitEntity::new, SpawnGroup.MISC).dimensions(1.0f, 2.4f).maxTrackingRange(10));
 
     public static final EntityType<PlasmaBoltEntity> PLASMA_BOLT = register("plasma_bolt",
             EntityType.Builder.<PlasmaBoltEntity>create(PlasmaBoltEntity::new, SpawnGroup.MISC).dimensions(0.25f, 0.25f)
                     .maxTrackingRange(6).trackingTickInterval(1));
+
+    public static final EntityType<SeveredLimbEntity> SEVERED_LIMB = register("severed_limb",
+            EntityType.Builder.<SeveredLimbEntity>create(SeveredLimbEntity::new, SpawnGroup.MISC).dimensions(0.35f, 0.3f).maxTrackingRange(6));
+
+    public static final EntityType<ExoRackEntity> EXO_RACK = register("exo_rack",
+            EntityType.Builder.<ExoRackEntity>create(ExoRackEntity::new, SpawnGroup.MISC).dimensions(1.3f, 0.2f).maxTrackingRange(10));
 
     private ModEntities() {}
 

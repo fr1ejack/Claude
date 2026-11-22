@@ -17,8 +17,8 @@ import net.minecraft.util.math.RotationAxis;
 import org.joml.Matrix4f;
 
 public class ExoSuitRenderer extends MobEntityRenderer<ExoSuitEntity, ExoSuitModel> {
-    /** 1,3 × Modellgröße ≈ 1,5 × Spielergröße. */
-    public static final float SCALE = 1.3f;
+    /** Der Anzug ist körpernah modelliert (Maßstab 1:1). */
+    public static final float SCALE = 1.0f;
     private static final Identifier TEXTURE = HiveInvasion.id("textures/entity/exosuit.png");
     private static final Identifier GLOW = HiveInvasion.id("textures/entity/exosuit_glow.png");
     private static final Identifier SHIELD = HiveInvasion.id("textures/entity/exo_shield.png");
@@ -49,6 +49,7 @@ public class ExoSuitRenderer extends MobEntityRenderer<ExoSuitEntity, ExoSuitMod
         MinecraftClient mc = MinecraftClient.getInstance();
         boolean ownSuitFirstPerson = suit.hasPassenger(mc.player) && mc.options.getPerspective().isFirstPerson();
         if (!ownSuitFirstPerson) super.render(suit, yaw, tickDelta, matrices, consumers, light);
+        AssemblyPuppet.render(suit, tickDelta, matrices, consumers, light);
         if (suit.isShieldActive()) renderShield(suit, tickDelta, matrices, consumers);
     }
 

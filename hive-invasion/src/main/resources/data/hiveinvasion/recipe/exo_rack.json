@@ -1,0 +1,21 @@
+{
+ "type": "minecraft:crafting_shaped",
+ "category": "misc",
+ "pattern": [
+  "III",
+  "I I",
+  "BBB"
+ ],
+ "key": {
+  "I": {
+   "item": "minecraft:iron_bars"
+  },
+  "B": {
+   "item": "minecraft:iron_block"
+  }
+ },
+ "result": {
+  "id": "hiveinvasion:exo_rack",
+  "count": 1
+ }
+}

@@ -3,9 +3,20 @@
 Eine außerirdische Brut überfällt die Welt. Eigene Kreaturen mit Parasiten-Lebenszyklus,
 Säureblut, Nestern – und später Städte, Militär, Fahrzeuge und Cutscenes.
 
-![Aliens](docs/media/aliens-v0.2.png)
+![Scanner](docs/media/scanner-v0.3.png)
 
-Clips: [Anzug anlegen](docs/media/clip-anzug-anlegen-v0.2.mp4) · [Kampf im Exo-Anzug](docs/media/clip-kampf-v0.2.mp4)
+Clips: [Anlegen am Gestell](docs/media/clip-gestell-anlegen-v0.3.mp4) · [Kampfmesser](docs/media/clip-messer-abtrennen-v0.3.mp4) · [Flammenwerfer](docs/media/clip-flammenwerfer-v0.3.mp4) · [Ragdoll-Leichen](docs/media/clip-ragdoll-v0.3.mp4)
+
+## Neu in Version 0.3
+
+| Inhalt | Was es tut |
+|---|---|
+| **Ragdoll-Leichen** | Körper kippen physikalisch um und rollen auf Rücken oder Bauch. Kopf, Arme und Beine sind einzelne, an Gelenken verbundene Glieder mit Schwerkraft, Bodenkontakt und Bewegungsgrenzen. Schläge und Schieben bringen sie wieder in Bewegung. Keine weiße Todeswolke mehr. |
+| **Kampfmesser** | Trennt Arme, Beine und (bei tödlichen Treffern) Köpfe ab – bei Zombies, Skeletten, Piglins und Stalkern. Abgetrennte Teile fliegen weg, trudeln, bleiben liegen und bluten. Bein ab = langsamer, Arm ab = schwächer und lässt Waffe fallen. Leichen fehlen die Teile ebenfalls, Stümpfe bluten. |
+| **Anzug-Gestell** | Der Anzug hängt komplett geöffnet im Gestell (Stiefel unten, Arme zur Seite mit offenen Handschuhen, Helm am Kran). **E** drücken: Du drehst dich um, gehst rückwärts in die Stiefel, streckst die Arme in die Handschuhe – dann schließen sich Arme, Beine, Brustplatte, der Helm senkt sich von oben und das Visier klappt zu. Steigt man in der Nähe aus, rastet der Anzug wieder ein. |
+| **Neuer Anzug** | Körpernah gebaut, mit aufklappbaren Schalen, zwei Plasmaläufen, Flammenwerfer, Schildprojektor und Jetpack. Realistische Laufgeschwindigkeit. |
+| **Systeme** | **Linksklick** Plasma (Doppellauf), **Rechtsklick** Flammenwerfer (setzt in Brand), **G** Schild, **Leertaste** Jetpack, **V** Scanner. |
+| **Visier-Scanner** | Umrandet Menschen durch Wände: **grün = gesund, rot = infiziert**, Aliens orange. HUD zeigt die Zahl der Infizierten. |
 
 ## Neu in Version 0.2
 
@@ -36,6 +47,9 @@ Clips: [Anzug anlegen](docs/media/clip-anzug-anlegen-v0.2.mp4) · [Kampf im Exo-
 **Bekannt:** Milch entfernt den Parasiten-Effekt noch (wird später verhindert).
 
 ## Fahrplan
+
+**Als Nächstes:** Militärbasis mit Tor, Wache zum Reden oder Angreifen, Beitritt mit 10 Soldaten und Funkgerät (Folgen / Dorthin / Zurück zur Basis / Angreifen).
+
 
 1. **Phase 1 – Die Brut** ✅ Kapsel, Klammerer, Larve, Stalker, Säureblut
 2. **Phase 2 – Nester:** riesige generierte Nester in Höhlen und unter der Erde, mit Harzwänden,

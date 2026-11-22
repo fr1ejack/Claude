@@ -39,10 +39,12 @@ public class CorpseEntity extends Entity {
     private static final TrackedData<NbtCompound> BODY = DataTracker.registerData(CorpseEntity.class, TrackedDataHandlerRegistry.NBT_COMPOUND);
     private static final TrackedData<String> PLAYER_NAME = DataTracker.registerData(CorpseEntity.class, TrackedDataHandlerRegistry.STRING);
     private static final TrackedData<Optional<UUID>> PLAYER_ID = DataTracker.registerData(CorpseEntity.class, TrackedDataHandlerRegistry.OPTIONAL_UUID);
+    private static final TrackedData<Integer> SEVERED = DataTracker.registerData(CorpseEntity.class, TrackedDataHandlerRegistry.INTEGER);
+    private static final TrackedData<Integer> BLOOD = DataTracker.registerData(CorpseEntity.class, TrackedDataHandlerRegistry.INTEGER);
     private static final TrackedData<Integer> AGE = DataTracker.registerData(CorpseEntity.class, TrackedDataHandlerRegistry.INTEGER);
 
     /** So lange (Ticks) sieht man noch die normale Umfall-Animation, bevor die Leiche erscheint. */
-    public static final int FADE_IN = 19;
+    public static final int FADE_IN = 0;
     private static final int COLLECT_TICKS = 4;
 
     private final SimpleInventory inventory = new SimpleInventory(54);
@@ -59,6 +61,8 @@ public class CorpseEntity extends Entity {
         CorpseEntity c = new CorpseEntity(type, dead.getWorld());
         c.refreshPositionAndAngles(dead.getX(), dead.getY(), dead.getZ(), dead.getBodyYaw(), 0);
         c.setVelocity(dead.getVelocity().multiply(1.2).add(0, 0.1, 0));
+        c.dataTracker.set(SEVERED, de.hiveinvasion.gore.Gore.getMask(dead));
+        c.dataTracker.set(BLOOD, de.hiveinvasion.fx.BloodFx.kindOf(dead).ordinal());
         if (dead instanceof PlayerEntity p) {
             c.dataTracker.set(PLAYER_NAME, p.getGameProfile().getName());
             c.dataTracker.set(PLAYER_ID, Optional.of(p.getUuid()));
@@ -83,11 +87,16 @@ public class CorpseEntity extends Entity {
         builder.add(PLAYER_NAME, "");
         builder.add(PLAYER_ID, Optional.empty());
         builder.add(AGE, 0);
+        builder.add(SEVERED, 0);
+        builder.add(BLOOD, 1);
     }
 
     public NbtCompound getBody() { return dataTracker.get(BODY); }
     public String getPlayerName() { return dataTracker.get(PLAYER_NAME); }
     public Optional<UUID> getPlayerId() { return dataTracker.get(PLAYER_ID); }
+    public void addSevered(int mask) { dataTracker.set(SEVERED, getSevered() | mask); }
+    public int getSevered() { return dataTracker.get(SEVERED); }
+    public de.hiveinvasion.fx.BloodFx.Kind bloodKind() { return de.hiveinvasion.fx.BloodFx.Kind.values()[dataTracker.get(BLOOD)]; }
     public int getCorpseAge() { return dataTracker.get(AGE); }
     public boolean isPlayerCorpse() { return getPlayerId().isPresent(); }
 
@@ -171,6 +180,8 @@ public class CorpseEntity extends Entity {
         getPlayerId().ifPresent(id -> nbt.putUuid("PlayerId", id));
         nbt.putInt("CorpseAge", getCorpseAge());
         nbt.putInt("Lifetime", lifetime);
+        nbt.putInt("Severed", getSevered());
+        nbt.putInt("Blood", dataTracker.get(BLOOD));
         nbt.put("Items", inventory.toNbtList(getRegistryManager()));
     }
 
@@ -181,6 +192,8 @@ public class CorpseEntity extends Entity {
         if (nbt.containsUuid("PlayerId")) dataTracker.set(PLAYER_ID, Optional.of(nbt.getUuid("PlayerId")));
         dataTracker.set(AGE, Math.max(FADE_IN + COLLECT_TICKS + 1, nbt.getInt("CorpseAge")));
         if (nbt.contains("Lifetime")) lifetime = nbt.getInt("Lifetime");
+        dataTracker.set(SEVERED, nbt.getInt("Severed"));
+        if (nbt.contains("Blood")) dataTracker.set(BLOOD, nbt.getInt("Blood"));
         inventory.readNbtList(nbt.getList("Items", NbtElement.COMPOUND_TYPE), getRegistryManager());
     }
 }

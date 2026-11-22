@@ -10,13 +10,13 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** Spieler im geschlossenen Exo-Anzug werden nicht gezeichnet – man sieht nur den Anzug. */
+/** Spieler im Exo-Anzug (oder beim Anlegen, dann zeichnet der Anzug eine Animationsfigur) werden nicht normal gezeichnet. */
 @Mixin(PlayerEntityRenderer.class)
 public class PlayerRendererMixin {
     @Inject(method = "render(Lnet/minecraft/client/network/AbstractClientPlayerEntity;FFLnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;I)V",
             at = @At("HEAD"), cancellable = true)
     private void hiveinvasion$hideInSuit(AbstractClientPlayerEntity player, float yaw, float tickDelta, MatrixStack matrices,
                                          VertexConsumerProvider consumers, int light, CallbackInfo ci) {
-        if (player.getVehicle() instanceof ExoSuitEntity) ci.cancel();
+        if (player.getVehicle() instanceof ExoSuitEntity || de.hiveinvasion.client.ExoClient.ASSEMBLING.contains(player.getUuid())) ci.cancel();
     }
 }

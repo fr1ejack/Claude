@@ -25,5 +25,13 @@
   "container.hiveinvasion.corpse_of": "Corpse of %s",
   "message.hiveinvasion.exo_online": "Exo Suit: all systems online",
   "message.hiveinvasion.exo_hint": "Stand with your back to the suit and press the trigger (or the red button on the suit)",
-  "message.hiveinvasion.exo_critical": "WARNING: armor critical!"
+  "message.hiveinvasion.exo_critical": "WARNING: armor critical!",
+  "item.hiveinvasion.combat_knife": "Combat Knife",
+  "entity.hiveinvasion.severed_limb": "Severed Limb",
+  "hud.hiveinvasion.exo_enter": "[%s] Suit up",
+  "item.hiveinvasion.exo_rack": "Suit Rack",
+  "entity.hiveinvasion.exo_rack": "Suit Rack",
+  "key.hiveinvasion.shield": "Exo: Energy shield",
+  "key.hiveinvasion.scanner": "Exo: Toggle scanner",
+  "category.hiveinvasion": "Hive Invasion"
 }

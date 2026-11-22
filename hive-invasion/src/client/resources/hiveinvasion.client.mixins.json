@@ -2,6 +2,16 @@
   "required": true,
   "package": "de.hiveinvasion.mixin.client",
   "compatibilityLevel": "JAVA_21",
-  "client": ["PlayerRendererMixin"],
-  "injectors": { "defaultRequire": 1 }
+  "client": [
+    "PlayerRendererMixin",
+    "LivingRendererMixin",
+    "DeathPoofMixin",
+    "OutlineMixin",
+    "OutlineColorMixin",
+    "CameraMixin",
+    "FirstPersonHandMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
 }

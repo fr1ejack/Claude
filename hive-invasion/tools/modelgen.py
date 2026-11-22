@@ -243,65 +243,110 @@ def larva():
 
 
 def exosuit():
-    """Exo-Anzug, Basisgröße wie ein Spieler (wird im Renderer x1.5 skaliert).
-    Offene Teile werden in Java animiert (Brustplatten, Helm-Visier, Arme)."""
+    """Exo-Anzug, körpernah um einen Spieler gebaut (Maßstab 1:1, Spieler steht auf 3 px hohen Sohlen).
+    Jedes Panzerteil besteht aus einer festen hinteren Schale und einer aufklappbaren vorderen Schale."""
+    def boot(side):
+        s = 1 if side == "left" else -1
+        return Part(f"{side}_boot", (2.4 * s, 24, 0), (0, 0, 0), [
+            Cube(-2.8, -3, -4.2, 5.6, 3, 7, "metal_dark"),          # Sohle (unter dem Fuß)
+            Cube(-2.8, -8, 1, 5.6, 5, 1.8, "metal"),               # Ferse
+            Cube(-3, -0.8, -4.6, 6, 0.8, 7.8, "rubber")], [        # Profil
+            Part(f"{side}_boot_front", (0, -3, -4.2), (0, 0, 0), [
+                Cube(-2.8, -5, 0, 5.6, 5, 1.2, "metal"), Cube(-2.8, -5, 0, 0.8, 5, 5.2, "metal"),
+                Cube(2.0, -5, 0, 0.8, 5, 5.2, "metal"), Cube(-2.2, -4.2, -0.3, 4.4, 1, 0.4, "hazard")])])
+
     def leg(side):
         s = 1 if side == "left" else -1
-        return Part(f"{side}_leg", (2.3 * s, 12, 0), (0, 0, 0), [
-            Cube(-2.2, 0, -2.2, 4.4, 6, 4.4, "metal"),
-            Cube(-1.6, 5, -1.6, 3.2, 2, 3.2, "metal_dark"),     # Knie-Gelenk
-            Cube(-2.4, 1, -2.6, 4.8, 1, 0.6, "hazard")], [
-            Part(f"{side}_shin", (0, 6.5, 0), (0, 0, 0), [
-                Cube(-2, 0, -2, 4, 5, 4, "metal"), Cube(-2.3, 0.5, -2.6, 4.6, 3, 1, "metal_dark"),
-                Cube(-2.4, 4.5, -3.6, 4.8, 1.5, 5.8, "metal_dark")])])     # Stiefel
+        def shell(name, y0, h, w, d, mat, extra=()):
+            return [Cube(-w / 2 + 0.0, 0, 0, w, h, d / 2, mat)], Part(name, (w / 2 * s, 0, 0), (0, 0, 0),
+                    [Cube(-w if s > 0 else 0, 0, -d / 2, w, h, d / 2, mat)] + list(extra))
+        tb, tf = shell(f"{side}_thigh_front", 0, 6.5, 6, 6, "metal",
+                       [Cube(-4.6 if s > 0 else 1.4, 1.5, -3.4, 3.2, 3, 0.5, "olive")])
+        sb, sf = shell(f"{side}_shin_front", 0, 5.5, 5.4, 5.4, "metal",
+                       [Cube(-4.2 if s > 0 else 1.2, -1, -3.2, 3, 2.6, 0.6, "metal_dark"),   # Knieschoner
+                        Cube(-4.4 if s > 0 else 1.0, 2.5, -3.0, 3.4, 2.2, 0.4, "olive")])
+        shin = Part(f"{side}_shin", (0, 7, 0), (0, 0, 0), sb + [Cube(-1.6, -1.2, -1.6, 3.2, 1.6, 3.2, "rubber")], [sf])
+        return Part(f"{side}_leg", (2.2 * s, 9, 0), (0, 0, 0), tb, [tf, shin])
 
     def arm(side):
         s = 1 if side == "left" else -1
-        cubes = [Cube(-2, -2, -2, 4, 6, 4, "metal"),
-                 Cube(-2.8 if s < 0 else -2.2, -3, -2.6, 5, 3, 5.2, "olive")]   # Schulterpanzer
-        kids = [Part(f"{side}_forearm", (0, 5.5, 0), (0, 0, 0), [
-            Cube(-1.8, 0, -1.8, 3.6, 6, 3.6, "metal"), Cube(-2, 4.5, -2, 4, 2, 4, "rubber")], [])]
-        if s < 0:   # Waffe am rechten Arm
-            kids[0].children.append(Part("cannon", (-2, 2, 0), (0, 0, 0), [
-                Cube(-2, -1.5, -5, 2, 3, 8, "metal_dark"), Cube(-1.6, -0.6, -7, 1.2, 1.2, 2, "metal"),
-                Cube(-1.4, -0.4, -7.1, 0.8, 0.8, 0.2, "glow_red")]))
-        else:       # Schildprojektor am linken Arm
-            kids[0].children.append(Part("shield_emitter", (2, 2, 0), (0, 0, 0), [
-                Cube(0, -1.5, -2.5, 1.2, 3, 5, "olive"), Cube(1.0, -1, -2, 0.4, 2, 4, "visor")]))
-            # Auslöseknopf
-            kids[0].children.append(Part("trigger_button", (0, 2, -2), (0, 0, 0),
-                                         [Cube(-0.7, 0, -0.5, 1.4, 1, 0.6, "glow_red")]))
-        return Part(f"{side}_arm", (6.3 * s, -10, 0), (0, 0, 0), cubes, kids)
+        cx = 1 * s     # Armmitte des Spielers relativ zum Schultergelenk
+        upper_back = [Cube(cx - 3, -1, 0, 6, 6.5, 3, "metal")]
+        upper_front = Part(f"{side}_arm_front", (cx + 3 * s, -1, 0), (0, 0, 0),
+                           [Cube(-6 if s > 0 else 0, 0, -3, 6, 6.5, 3, "metal")])
+        pauldron = Cube(cx - 3.8, -4.2, -3.8, 7.6, 4.2, 7.6, "olive")
+        glove_front = Part(f"{side}_gauntlet_front", (cx + 2.75 * s, 0, 0), (0, 0, 0),
+                           [Cube(-5.5 if s > 0 else 0, 0, -2.75, 5.5, 5.5, 2.75, "metal_dark"),
+                            Cube(-4.5 if s > 0 else 1, 1.5, -3.05, 3.5, 2, 0.3, "olive")])
+        forearm = Part(f"{side}_forearm", (0, 5.5, 0), (0, 0, 0), [
+            Cube(cx - 2.75, 0, 0, 5.5, 5.5, 2.75, "metal_dark"),
+            Cube(cx - 2.4, 5.5, -2.4, 4.8, 3.2, 4.8, "rubber"),          # Handschuh
+            Cube(cx - 2.6, 6.2, -2.6, 5.2, 1.0, 5.2, "metal")], [glove_front])
+        if s < 0:   # rechter Arm: Plasmakanonen (zwei Läufe)
+            forearm.children.append(Part("cannon", (cx - 2.75, 1.5, 0), (0, 0, 0), [
+                Cube(-2.6, -1.8, -4.5, 2.6, 3.6, 7.5, "metal_dark"),
+                Cube(-2.3, -1.4, -6.2, 1.0, 1.0, 1.8, "metal"), Cube(-2.3, 0.4, -6.2, 1.0, 1.0, 1.8, "metal"),
+                Cube(-2.2, -1.3, -6.3, 0.8, 0.8, 0.2, "glow_red"), Cube(-2.2, 0.5, -6.3, 0.8, 0.8, 0.2, "glow_red")]))
+        else:       # linker Arm: Flammenwerfer unten, Schildprojektor außen
+            forearm.children.append(Part("flamer", (cx, 5.5, -1.5), (0, 0, 0), [
+                Cube(-1.2, -0.5, -4.5, 2.4, 2.4, 4.5, "metal_dark"), Cube(-0.8, -0.1, -5.6, 1.6, 1.6, 1.1, "metal"),
+                Cube(-0.5, 0.2, -5.7, 1.0, 1.0, 0.2, "thruster")]))
+            forearm.children.append(Part("shield_emitter", (cx + 2.75, 1.5, 0), (0, 0, 0), [
+                Cube(0, -1.5, -2.2, 1.2, 3, 4.4, "olive"), Cube(1.0, -1, -1.8, 0.4, 2, 3.6, "visor")]))
+            forearm.children.append(Part("trigger_button", (cx, 1.5, -2.9), (0, 0, 0),
+                                         [Cube(-0.7, 0, -0.4, 1.4, 1, 0.5, "glow_red")]))
+        return Part(f"{side}_arm", (5 * s, -10, 0), (0, 0, 0), upper_back + [pauldron], [upper_front, forearm])
 
-    helmet = Part("helmet", (0, -12.2, 0.5), (0, 0, 0), [
-        Cube(-3.8, -7.5, -0.8, 7.6, 7.5, 4.6, "olive"),          # Hinterkopf
-        Cube(-1, -8.6, -2, 2, 1.2, 6, "metal_dark")], [           # Kamm
-        Part("visor", (0, -7.5, -0.8), (0, 0, 0), [
-            Cube(-3.8, 0, -4.2, 7.6, 7.5, 4.2, "olive"),
-            Cube(-3, 2.2, -4.5, 6, 2.2, 0.5, "visor"),
-            Cube(-2, 5.2, -4.4, 4, 1.4, 0.4, "metal_dark")])])
-    body = Part("body", (0, 12, 0), (0, 0, 0), [
-        Cube(-4.5, -3, -2.6, 9, 3, 5.2, "metal_dark"),           # Hüfte
-        Cube(-4.5, -12, 0.6, 9, 9, 2.4, "metal"),                # Rückenplatte
-        Cube(-1.5, -12, -0.6, 3, 9, 1.4, "rubber")], [           # Wirbel/Rahmen
-        Part("jetpack", (0, -11, 3), (0, 0, 0), [
-            Cube(-4, 0, 0, 3, 8, 3, "metal_dark"), Cube(1, 0, 0, 3, 8, 3, "metal_dark"),
-            Cube(-1, 1, 0, 2, 5, 2, "hazard"),
-            Cube(-3.5, 8, 0.5, 2, 1, 2, "thruster"), Cube(1.5, 8, 0.5, 2, 1, 2, "thruster")]),
-        Part("chest_left", (4.5, -7.5, 0.6), (0, 0, 0), [
-            Cube(-4.5, -4.5, -3.6, 4.5, 9, 3.6, "olive"), Cube(-4, -2.5, -3.9, 3, 2, 0.4, "glow_red"),
-            Cube(-4.6, 2.5, -3.8, 4.6, 1, 0.4, "hazard")]),
-        Part("chest_right", (-4.5, -7.5, 0.6), (0, 0, 0), [
-            Cube(0, -4.5, -3.6, 4.5, 9, 3.6, "olive"), Cube(0.2, -3.5, -3.9, 3.5, 1, 0.4, "metal_dark"),
-            Cube(0, 2.5, -3.8, 4.6, 1, 0.4, "hazard")]),
-        helmet, arm("left"), arm("right")])
-    return [leg("left"), leg("right"), body], 128, 128
+    helmet = Part("helmet", (0, -12, 0), (0, 0, 0), [
+        Cube(-5, -10, 0, 10, 10, 5, "olive"),               # Hinterkopf
+        Cube(-1, -11, -1, 2, 1.2, 6, "metal_dark"),         # Kamm
+        Cube(-5.4, -6, 1, 0.6, 3, 3, "metal_dark"), Cube(4.8, -6, 1, 0.6, 3, 3, "metal_dark")], [   # Gehörschutz
+        Part("visor", (0, -10, 0), (0, 0, 0), [
+            Cube(-5, 0, -5.5, 10, 10, 5.5, "olive"),
+            Cube(-4.2, 3.2, -5.9, 8.4, 2.6, 0.5, "visor"),
+            Cube(-2.5, 6.6, -5.8, 5, 2.4, 0.4, "metal_dark"),          # Atemfilter
+            Cube(-1.5, 7.2, -6.1, 3, 1.2, 0.3, "rubber")])])
+    chest_l = Part("chest_left", (6, -7, 1.5), (0, 0, 0), [
+        Cube(-6, -5.5, -5, 6, 11, 5, "olive"), Cube(-5.2, -4.5, -5.3, 3.4, 2, 0.4, "glow_red"),
+        Cube(-6, 3, -5.2, 6, 1, 0.4, "hazard"), Cube(-6, -1, -5.2, 6, 0.6, 0.3, "metal_dark")])
+    chest_r = Part("chest_right", (-6, -7, 1.5), (0, 0, 0), [
+        Cube(0, -5.5, -5, 6, 11, 5, "olive"), Cube(1, -4.5, -5.3, 4, 1, 0.4, "metal_dark"),
+        Cube(0, 3, -5.2, 6, 1, 0.4, "hazard"), Cube(0, -1, -5.2, 6, 0.6, 0.3, "metal_dark")])
+    body = Part("body", (0, 9, 0), (0, 0, 0), [
+        Cube(-5, -2, -3.2, 10, 4, 6.4, "metal_dark"),        # Hüfte
+        Cube(-6, -13, 1.5, 12, 11, 3, "metal"),              # Rückenplatte
+        Cube(-5, -14.5, -3, 10, 1.5, 7, "metal_dark")], [    # Kragen
+        Part("jetpack", (0, -12.5, 4.5), (0, 0, 0), [
+            Cube(-5, 0, 0, 4, 9, 4, "metal_dark"), Cube(1, 0, 0, 4, 9, 4, "metal_dark"),
+            Cube(-1, 1, 0.5, 2, 6, 2, "hazard"),
+            Cube(-4.5, 9, 0.5, 3, 1.5, 3, "metal"), Cube(1.5, 9, 0.5, 3, 1.5, 3, "metal"),
+            Cube(-4, 10.5, 1, 2, 0.4, 2, "thruster"), Cube(2, 10.5, 1, 2, 0.4, 2, "thruster")]),
+        chest_l, chest_r, helmet, arm("left"), arm("right")])
+    return [boot("left"), boot("right"), leg("left"), leg("right"), body], 128, 128
+
+
+def exorack():
+    """Montagegestell: Bodenplatte, zwei Säulen, Querträger, Helm-Kran, Armhalter."""
+    parts = Part("frame", (0, 24, 0), (0, 0, 0), [
+        Cube(-10, -2, -6, 20, 2, 13, "metal_dark"),            # Bodenplatte
+        Cube(-10, -2.2, -6.4, 20, 0.6, 0.6, "hazard"),          # Warnkante
+        Cube(-10, -48, 6, 2.5, 46, 2.5, "metal"), Cube(7.5, -48, 6, 2.5, 46, 2.5, "metal"),   # Säulen
+        Cube(-10, -51, 5, 20, 3, 4, "metal_dark"),              # Querträger
+        Cube(-1.5, -51, -4, 3, 2, 9, "metal"),                  # Kranarm
+        Cube(-0.5, -49, -1, 1, 4, 1, "rubber"),                 # Kranseil
+        Cube(-7, -34, 7, 14, 10, 1.2, "metal_dark"),            # Rückenhalter
+        Cube(-6, -30, 6.5, 12, 1.2, 1, "metal"),
+        Cube(-21, -24.5, 6.5, 11, 1.5, 1.5, "metal"), Cube(10, -24.5, 6.5, 11, 1.5, 1.5, "metal"),   # Armhalter
+        Cube(-21.5, -26, 5, 1.5, 3, 3, "metal_dark"), Cube(20, -26, 5, 1.5, 3, 3, "metal_dark"),
+        Cube(-9.6, -40, 5.5, 1.5, 1.5, 0.4, "glow_red"), Cube(8.1, -40, 5.5, 1.5, 1.5, 0.4, "visor"),
+        Cube(-9.4, -20, 8.5, 1, 18, 1, "tube"), Cube(8.4, -20, 8.5, 1, 18, 1, "tube")])
+    return [parts], 256, 128
 
 
 def main():
     random.seed(1)
     methods = []
-    for name, fn, seed in [("stalker", stalker, 3), ("clinger", clinger, 5), ("larva", larva, 9), ("exosuit", exosuit, 11)]:
+    for name, fn, seed in [("stalker", stalker, 3), ("clinger", clinger, 5), ("larva", larva, 9), ("exosuit", exosuit, 11), ("exorack", exorack, 13)]:
         roots, tw, th = fn()
         holder = Part(name, children=roots)
         pack(holder, tw, th)
@@ -313,7 +358,7 @@ def main():
            "package de.hiveinvasion.client.model;\n\nimport net.minecraft.client.model.*;\n\n"
            "public final class GenModels {\n    private GenModels() {}\n\n" + "\n\n".join(methods) + "\n}\n")
     open(JAVA, "w").write(src)
-    print("Modelle erzeugt:", ", ".join(n for n in ["stalker", "clinger", "larva", "exosuit"]))
+    print("Modelle erzeugt:", ", ".join(n for n in ["stalker", "clinger", "larva", "exosuit", "exorack"]))
 
 
 if __name__ == "__main__":

@@ -31,6 +31,12 @@ public class ExoSuitItem extends Item {
         suit.setHeadYaw(yaw);
         if (!world.isSpaceEmpty(suit)) return ActionResult.FAIL;
         world.spawnEntity(suit);
+        // Mit Gestell aufstellen
+        ExoRackEntity rack = ModEntities.EXO_RACK.create(world);
+        if (rack != null) {
+            rack.refreshPositionAndAngles(suit.getX(), suit.getY(), suit.getZ(), yaw, 0);
+            world.spawnEntity(rack);
+        }
         world.playSound(null, pos, SoundEvents.BLOCK_ANVIL_PLACE, SoundCategory.PLAYERS, 0.6f, 0.8f);
         ctx.getStack().decrementUnlessCreative(1, player);
         if (player != null && !player.getInventory().contains(new ItemStack(ModItems.EXO_TRIGGER))) {
