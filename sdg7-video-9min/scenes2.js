@@ -293,6 +293,5 @@ S.hand2=(lt,D,c,L)=>{
   s+=P2({x:640,y:640,s:1,armR:[90,-30+Math.sin(NOW*2)*6],mouth:'smile',look:0,blink:blinkAt(2)});
   s+=popAt(860,330,pop(lt,0.4),`<circle r="70" fill="${C.white}" stroke="${O}" stroke-width="4"/>`+txt(0,24,'du?',50,C.tealD,900));
   for(let i=0;i<2;i++){const k=pop(lt,0.8+i*0.4),bob=Math.sin(NOW*3+i)*6; s+=popAt([440,500][i],[250+bob,170+bob][i],k,txt(0,0,'?',70,[C.yellow,C.red][i],900,'middle',`stroke="${O}" stroke-width="2"`));}
-  s+=G(pill(1060,120,'Weiter mit Teil 3 →',C.teal,'#fff',26),`translate(${f((1-eout(P(lt,at(c,L,0,0.55),at(c,L,0,0.85))))*300)},0)`,P(lt,at(c,L,0,0.55),at(c,L,0,0.85)));
   return s;
 };

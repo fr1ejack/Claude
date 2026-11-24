@@ -339,6 +339,5 @@ S.hand1=(lt,D,c,L)=>{
   let s=stripes();
   s+=P1({x:640,y:640,s:1,armL:[100,-60],armR:[100,-60],mouth:'flat',brow:1,lookY:-1,blink:blinkAt(1)});
   for(let i=0;i<3;i++){const k=pop(lt,0.3+i*0.4),bob=Math.sin(NOW*3+i)*6; s+=popAt([460,820,640][i],[260+bob,250+bob,150+bob][i],k,txt(0,0,'?',70,[C.yellow,C.teal,C.red][i],900,'middle',`stroke="${O}" stroke-width="2"`));}
-  s+=G(pill(1060,120,'Weiter mit Teil 2 →',C.teal,'#fff',26),`translate(${f((1-eout(P(lt,at(c,L,0,0.55),at(c,L,0,0.85))))*300)},0)`,P(lt,at(c,L,0,0.55),at(c,L,0,0.85)));
   return s;
 };
