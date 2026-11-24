@@ -1,7 +1,7 @@
 // ======================================================================
 //  Drehbuch: drei Teile à 3 Minuten. Jede Szene hat ihre Sätze.
 //  Die Zeiten werden automatisch aus der Wortanzahl berechnet und pro Teil auf 180 s skaliert.
-//  Nach der Aufnahme können echte Satzzeiten über window.REAL_TIMES gesetzt werden.
+//  Nach der Aufnahme setzt voice/real.js die echten Satzlängen; dieser Teil wird dann nicht skaliert.
 // ======================================================================
 const PARTS = [
   {n:1, title:'Teil 1 · Energie im Alltag & Was ist SDG 7?'},
@@ -10,11 +10,11 @@ const PARTS = [
 ];
 const SCRIPT = [
   // ---------------- TEIL 1 ----------------
-  {id:'phone',     part:1, min:3.6, cut:true, lines:['Morgens: Handy laden.']},
-  {id:'train',     part:1, min:3.6, cut:true, lines:['Mit dem Zug zur Schule.']},
-  {id:'city',      part:1, min:3.6, cut:true, lines:['Abends gehen überall die Lichter an.']},
+  {id:'phone',     part:1, min:2.8, cut:true, lines:['Morgens: Handy laden.']},
+  {id:'train',     part:1, min:3.0, cut:true, lines:['Mit dem Zug zur Schule.']},
+  {id:'city',      part:1, min:3.0, cut:true, lines:['Abends gehen überall die Lichter an.']},
   {id:'blackout',  part:1, min:9,   lines:['Und plötzlich … ist der Strom weg.', 'Kein Licht, kein Internet, kein warmes Essen aus der Mikrowelle.']},
-  {id:'world',     part:1, chapter:1, lines:['Für fast 700 Millionen Menschen ist das Alltag – sie haben gar keinen Strom.', 'Die meisten leben in Afrika südlich der Sahara – oft auf dem Land, weit weg vom nächsten Stromnetz.']},
+  {id:'world',     part:1, chapter:1, lines:['Für fast 700 Millionen Menschen ist das Alltag – sie haben gar keinen Strom. Das ist etwa jeder zwölfte Mensch.', 'Die meisten leben in Afrika südlich der Sahara – oft auf dem Land, weit weg vom nächsten Stromnetz.']},
   {id:'without',   part:1, lines:['Ohne Strom können Kinder abends nicht lernen, Medikamente nicht gekühlt werden und kleine Betriebe nicht wachsen.']},
   {id:'cooking',   part:1, lines:['Und noch mehr Menschen fehlt eine saubere Art zu kochen: Rund zwei Milliarden kochen über offenem Feuer – mit Holz, Kohle oder Dung.', 'Der Rauch in den Hütten macht krank, besonders Frauen und Kinder.']},
   {id:'home',      part:1, lines:['Dabei steckt Energie in fast allem: im Kühlschrank, in der Heizung, im Licht, im Handy und in jedem Produkt aus einer Fabrik.']},
@@ -24,7 +24,7 @@ const SCRIPT = [
   {id:'links',     part:1, lines:['Die Ziele hängen zusammen: Ohne Energie gibt es keine gute Bildung, keine Gesundheitsversorgung und keinen Kampf gegen Armut.']},
   {id:'promise',   part:1, lines:['SDG 7 verspricht: Bis 2030 soll jeder Mensch Zugang zu bezahlbarer, verlässlicher, nachhaltiger und moderner Energie haben.']},
   {id:'meaning',   part:1, lines:['Bezahlbar heißt: Niemand soll sich zwischen Strom und Essen entscheiden müssen.', 'Verlässlich heißt: Der Strom ist da, wenn man ihn braucht.', 'Und nachhaltig heißt: Unsere Energie soll das Klima nicht zerstören.']},
-  {id:'targets',   part:1, lines:['Dafür gibt es fünf Unterziele.', '7.1: Zugang für alle. 7.2: deutlich mehr erneuerbare Energie. 7.3: Energie doppelt so schnell effizienter nutzen wie bisher.', 'Dazu kommen 7.a – internationale Zusammenarbeit – und 7.b – bessere Infrastruktur für ärmere Länder.']},
+  {id:'targets',   part:1, lines:['Dafür gibt es fünf Unterziele.', '7.1: Zugang für alle. 7.2: deutlich mehr erneuerbare Energie. 7.3: Energie doppelt so schnell effizienter nutzen.', 'Dazu kommen 7.a – internationale Zusammenarbeit – und 7.b – bessere Infrastruktur für ärmere Länder.']},
   {id:'progress',  part:1, lines:['Seit 2010 hat sich einiges getan: Hunderte Millionen Menschen haben zum ersten Mal Strom bekommen.', 'Aber das Tempo reicht noch nicht, um das Ziel bis 2030 zu erreichen.']},
   {id:'hand1',     part:1, lines:['Doch warum ist das so schwierig? Darum geht es im nächsten Teil.']},
   // ---------------- TEIL 2 ----------------
@@ -61,15 +61,25 @@ const SCRIPT = [
 // ---------- Zeitachse berechnen ----------
 const PART_LEN = 180, WPS = 2.05, PAUSE = 0.65, LEAD = 0.45, TAILPAD = 0.5;
 const words = s => s.replace(/[–…·:]/g,' ').split(/\s+/).filter(Boolean).length;
+// Echte Satzlängen aus den Aufnahmen (von voice/align.py erzeugt): REAL[id] = {lens:[...], gaps:[...]}
+const REALT = (typeof window!=='undefined' && window.REAL) || (typeof globalThis!=='undefined' && globalThis.REAL) || {};
+const REAL_PARTS = new Set(SCRIPT.filter(s=>REALT[s.id]).map(s=>s.part));
 function buildTimeline(){
   const scenes = SCRIPT.map(sc => {
     let t = LEAD; const cues = [], lens = [];
-    for(const l of sc.lines){ const d = words(l)/WPS; cues.push(t); lens.push(d); t += d + PAUSE; }
-    const dur = Math.max(sc.min||0, t - PAUSE + TAILPAD);
-    return Object.assign({}, sc, {cues, lens, dur});
+    const R = REALT[sc.id];
+    sc.lines.forEach((l,i) => {
+      const d = R ? R.lens[i] : words(l)/WPS;
+      cues.push(t); lens.push(d);
+      t += d + (R ? R.gaps[i] : PAUSE);
+    });
+    const lastGap = R ? R.gaps[sc.lines.length-1] : PAUSE;
+    const dur = Math.max(sc.min||0, t - lastGap + TAILPAD);
+    return Object.assign({}, sc, {cues, lens, dur, real: !!R});
   });
-  // pro Teil auf 180 s skalieren
+  // Teile ohne Aufnahme auf 180 s skalieren
   for(const p of [1,2,3]){
+    if(REAL_PARTS.has(p)) continue;
     const ss = scenes.filter(s => s.part===p), sum = ss.reduce((a,s)=>a+s.dur,0), k = PART_LEN/sum;
     for(const s of ss){ s.dur*=k; s.cues=s.cues.map(c=>c*k); s.lens=s.lens.map(c=>c*k); }
   }

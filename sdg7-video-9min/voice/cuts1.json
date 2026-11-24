@@ -1,0 +1,210 @@
+[
+ {
+  "id": "phone",
+  "line": 0,
+  "start": 2.13,
+  "end": 3.45,
+  "gap": 0.45,
+  "text": "Morgens Handyladen"
+ },
+ {
+  "id": "train",
+  "line": 0,
+  "start": 3.5,
+  "end": 6.62,
+  "gap": 1.1,
+  "text": "mit dem Zug zur Schule."
+ },
+ {
+  "id": "city",
+  "line": 0,
+  "start": 7.81,
+  "end": 10.45,
+  "gap": 0.45,
+  "text": "Abends gehen überall die Lichter an"
+ },
+ {
+  "id": "blackout",
+  "line": 0,
+  "start": 10.5,
+  "end": 14.98,
+  "gap": 0.98,
+  "text": "und plötzlich ist der Strom weg."
+ },
+ {
+  "id": "blackout",
+  "line": 1,
+  "start": 15.41,
+  "end": 19.04,
+  "gap": 1.1,
+  "text": "Kein Licht, kein Internet, kein warmes Essen aus der Mikrowelle."
+ },
+ {
+  "id": "world",
+  "line": 0,
+  "start": 20.01,
+  "end": 26.58,
+  "gap": 1.1,
+  "text": "Für fast 700 Millionen Menschen ist das Alltag. Sie haben gar keinen Strom. Das ist etwa jeder zwölfte Mensch."
+ },
+ {
+  "id": "world",
+  "line": 1,
+  "start": 27.67,
+  "end": 37.8,
+  "gap": 0.64,
+  "text": "Die meisten leben in Afrika südlich der Sahara, oft auf dem Land, weit weg vom nächsten Stromnetz."
+ },
+ {
+  "id": "without",
+  "line": 0,
+  "start": 37.89,
+  "end": 44.36,
+  "gap": 1.1,
+  "text": "Ohne Strom können Kinder abends nicht lernen, Medikamente nicht gekühlt werden und kleine Betriebe nicht wachsen."
+ },
+ {
+  "id": "cooking",
+  "line": 0,
+  "start": 45.67,
+  "end": 56.14,
+  "gap": 1.1,
+  "text": "Und noch mehr Menschen fehlt eine saubere Art zu kochen. Rund zwei Milliarden kochen über offenem Feuer mit Holz, Kohle oder Dung."
+ },
+ {
+  "id": "cooking",
+  "line": 1,
+  "start": 57.21,
+  "end": 61.46,
+  "gap": 1.1,
+  "text": "Der Rauch in den Hütten macht krank, besonders Frauen und Kinder."
+ },
+ {
+  "id": "home",
+  "line": 0,
+  "start": 63.05,
+  "end": 72.56,
+  "gap": 1.1,
+  "text": "Dabei steckt Energie in fast allem, im Kühlschrank, in der Heizung, im Licht, im Handy und in jedem Produkt aus einer Fabrik."
+ },
+ {
+  "id": "mobility",
+  "line": 0,
+  "start": 74.19,
+  "end": 81.56,
+  "gap": 1.1,
+  "text": "Auch Autos, Busse, Flugzeuge und Schiffe brauchen Energie, meistens noch Benzin, Diesel oder Kerosin."
+ },
+ {
+  "id": "tile",
+  "line": 0,
+  "start": 82.57,
+  "end": 87.04,
+  "gap": 1.1,
+  "text": "Genau darum geht es in SDG 7, bezahlbare und saubere Energie."
+ },
+ {
+  "id": "ring",
+  "line": 0,
+  "start": 88.59,
+  "end": 98.41,
+  "gap": 0.45,
+  "text": "Es ist eines von 17 Zielen, das die Vereinten Nationen 2015 beschlossen haben. Alle 193 Mitgliedstaaten haben zugestimmt,"
+ },
+ {
+  "id": "ring",
+  "line": 1,
+  "start": 98.29,
+  "end": 102.96,
+  "gap": 1.1,
+  "text": "bis 2030 soll die Welt gerechter und nachhaltiger werden, für alle."
+ },
+ {
+  "id": "links",
+  "line": 0,
+  "start": 104.07,
+  "end": 113.5,
+  "gap": 1.06,
+  "text": "Die Ziele hängen zusammen, ohne Energie gibt es keine gute Bildung, keine Gesundheitsversorgung und keinen Kampf gegen Armut."
+ },
+ {
+  "id": "promise",
+  "line": 0,
+  "start": 114.01,
+  "end": 122.98,
+  "gap": 0.6,
+  "text": "SDG 7 verspricht, bis 2030 soll jeder Mensch Zugang zu bezahlbarer, verlässlicher, nachhaltiger und moderner Energie haben."
+ },
+ {
+  "id": "meaning",
+  "line": 0,
+  "start": 123.03,
+  "end": 127.4,
+  "gap": 1.1,
+  "text": "Bezahlbar heißt, niemand soll sich zwischen Strom und Essen entscheiden müssen."
+ },
+ {
+  "id": "meaning",
+  "line": 1,
+  "start": 128.67,
+  "end": 132.08,
+  "gap": 1.1,
+  "text": "Verlässlich heißt, der Strom ist da, wenn man ihn braucht."
+ },
+ {
+  "id": "meaning",
+  "line": 2,
+  "start": 134.19,
+  "end": 138.88,
+  "gap": 1.1,
+  "text": "Und nachhaltig heißt, unsere Energie soll das Klima nicht zerstören."
+ },
+ {
+  "id": "targets",
+  "line": 0,
+  "start": 140.13,
+  "end": 143.0,
+  "gap": 0.98,
+  "text": "Dafür gibt es 5 Unterziele."
+ },
+ {
+  "id": "targets",
+  "line": 1,
+  "start": 143.43,
+  "end": 151.82,
+  "gap": 1.1,
+  "text": "7.1 Zugang für alle, 7.2 deutlich mehr erneuerbare Energie, 7.3 Energie doppelt so schnell und effizienter nutzen."
+ },
+ {
+  "id": "targets",
+  "line": 2,
+  "start": 152.71,
+  "end": 159.18,
+  "gap": 0.72,
+  "text": "Dazu kommen 7.a internationale Zusammenarbeit und 7.b bessere Infrastruktur für ärmere Länder."
+ },
+ {
+  "id": "progress",
+  "line": 0,
+  "start": 159.35,
+  "end": 165.2,
+  "gap": 1.1,
+  "text": "Seit 2010 hat sich einiges getan, hunderte Millionen Menschen haben zum ersten Mal Strom bekommen."
+ },
+ {
+  "id": "progress",
+  "line": 1,
+  "start": 167.17,
+  "end": 171.24,
+  "gap": 1.1,
+  "text": "Aber das Tempo reicht noch nicht, um das Ziel bis 2030 zu erreichen."
+ },
+ {
+  "id": "hand1",
+  "line": 0,
+  "start": 173.85,
+  "end": 179.2,
+  "gap": 0.6,
+  "text": "Doch warum ist das so schwierig? Darum geht es im nächsten Teil."
+ }
+]
