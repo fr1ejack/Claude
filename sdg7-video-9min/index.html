@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>SDG 7 Erklärvideo (9 Min.)</title>
+<style>
+@font-face{font-family:Nunito;font-weight:600;src:url(fonts/nunito-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:Nunito;font-weight:800;src:url(fonts/nunito-latin-800-normal.woff2) format('woff2')}
+@font-face{font-family:Nunito;font-weight:900;src:url(fonts/nunito-latin-900-normal.woff2) format('woff2')}
+html,body{margin:0;background:#111;overflow:hidden}
+#stage{position:relative;width:1280px;height:720px;overflow:hidden;font-family:Nunito,sans-serif}
+#svg{position:absolute;inset:0}
+#cap{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);max-width:1060px;text-align:center;
+  font:800 27px/1.3 Nunito,sans-serif;color:#FBF6EC;background:rgba(38,44,59,.84);padding:10px 24px;border-radius:18px;white-space:normal}
+</style>
+</head>
+<body>
+<div id="stage">
+  <svg id="svg" viewBox="0 0 1280 720" width="1280" height="720" xmlns="http://www.w3.org/2000/svg"></svg>
+  <div id="cap"></div>
+</div>
+<script src="lib.js"></script>
+<script src="script.js"></script>
+<script src="scenes1.js"></script>
+<script src="scenes2.js"></script>
+<script src="scenes3.js"></script>
+<script>
+const DUR = TL.dur;
+function sceneAt(T){ let i=0; while(i<TL.scenes.length-1 && T>=TL.scenes[i+1].start) i++; return i; }
+
+// Untertitel in gut lesbare Stücke teilen
+function chunks(line){
+  const sent=line.split(/(?<=[.!?])\s+/);
+  const out=[];
+  for(const s of sent){
+    if(words(s)<=15){ out.push(s); continue; }
+    const parts=s.split(/(?<=[,:])\s+|\s+(?=– )/); let cur='';
+    for(const p of parts){ if(cur && words(cur+' '+p)>15){ out.push(cur); cur=p; } else cur=cur?cur+' '+p:p; }
+    if(cur) out.push(cur);
+  }
+  return out;
+}
+function caption(sc,lt){
+  for(let i=0;i<sc.lines.length;i++){
+    const a=sc.cues[i], b=a+sc.lens[i]+0.5;
+    if(lt>=a-0.05 && lt<b){
+      const ch=chunks(sc.lines[i]), tot=ch.reduce((x,c)=>x+words(c),0);
+      let acc=a;
+      for(const c of ch){ const d=sc.lens[i]*words(c)/tot; if(lt<acc+d || c===ch[ch.length-1]) return c; acc+=d; }
+    }
+  }
+  return null;
+}
+
+function renderFrame(T){
+  NOW=T;
+  const si=sceneAt(T), sc=TL.scenes[si], prev=TL.scenes[si-1], next=TL.scenes[si+1];
+  const lt=T-sc.start, D=sc.dur;
+  let s=S[sc.id](lt,D,sc.cues,sc.lens);
+  if(!sc.cut) s=`<g transform="${scaleAt(640,360,1+0.025*lt/D)}">${s}</g>`;
+  // Übergänge
+  const fadeIn=si>0 && !sc.cut && !(prev&&prev.cut);
+  const fadeOut=next && !next.cut && !sc.cut && !(sc.id==='city');
+  let fa=0;
+  if(fadeIn) fa=Math.max(fa,1-lt/0.3);
+  if(fadeOut) fa=Math.max(fa,1-(D-lt)/0.3);
+  if(fa>0) s+=`<rect width="1280" height="720" fill="${C.cream}" opacity="${f(clamp(fa)*100)/100}"/>`;
+  if(sc.cut && si>0){ const k=1-lt/0.12; if(k>0) s+=`<rect width="1280" height="720" fill="#fff" opacity="${f(k*70)/100}"/>`; }
+  if(T<0.4) s+=`<rect width="1280" height="720" fill="#000" opacity="${f((1-T/0.4)*100)/100}"/>`;
+  if(T>DUR-1.2) s+=`<rect width="1280" height="720" fill="#000" opacity="${f(clamp((T-(DUR-1.2))/1.2)*100)/100}"/>`;
+  // Kapitel-Banner
+  if(sc.chapter){
+    const k=P(lt,0.4,0.9)*(1-P(lt,4.6,5.1));
+    if(k>0){ const ttl=PARTS[sc.chapter-1].title, w=ttl.length*12.4+60;
+      s+=`<g transform="translate(${f(-w+(w+24)*eout(k))},18)"><rect x="0" y="0" width="${f(w)}" height="46" rx="23" fill="${C.navy}" stroke="${O}" stroke-width="3"/>${txt(30,31,ttl,22,'#FBF6EC',900,'start')}</g>`; }
+  }
+  document.getElementById('svg').innerHTML=s;
+  const cap=document.getElementById('cap'), c=window.NOCAPS?null:caption(sc,lt);
+  if(c){ cap.style.display='block'; if(cap.textContent!==c) cap.textContent=c; }
+  else cap.style.display='none';
+}
+window.renderFrame=renderFrame;
+
+if(!window.RENDER_MODE){
+  const q=new URLSearchParams(location.search);
+  let start=performance.now()-(parseFloat(q.get('t'))||0)*1000;
+  const audio=new Audio('music.wav');
+  document.addEventListener('click',()=>{start=performance.now(); audio.currentTime=0; audio.play().catch(()=>{});});
+  (function loop(){ renderFrame(((performance.now()-start)/1000)%DUR); requestAnimationFrame(loop); })();
+}
+</script>
+</body>
+</html>
