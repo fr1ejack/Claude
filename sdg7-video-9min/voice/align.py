@@ -50,13 +50,18 @@ for i, k in enumerate(ks):
         k2 = ks[i + 1]
         if span[k][1] >= span[k2][0]: span[k][1] = span[k2][0] - 1
         if span[k2][0] - span[k][1] > 1:
-            if not first_matched[k2]: span[k2][0] = span[k][1] + 1
+            gapw = list(range(span[k][1] + 1, span[k2][0]))
+            ends = [g for g in gapw if re.search(r'[.!?]\s*$', words[g][2])]
+            if ends:   # bis zum letzten Satzzeichen gehört alles zum vorherigen Satz
+                span[k][1] = ends[-1]; span[k2][0] = ends[-1] + 1
+            elif not first_matched[k2]: span[k2][0] = span[k][1] + 1
             else: span[k][1] = span[k2][0] - 1
 
 # Entrauschen (tiefes Brummen raus, sanfte Rauschminderung, Lautheit angleichen)
 clean = os.path.join(HERE, f'clean{part}.wav')
-subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', src, '-af',
-                'highpass=f=85,afftdn=nf=-40:nr=10:tn=1,loudnorm=I=-17:TP=-1.5:LRA=9', '-ar', '48000', '-ac', '1', clean], check=True)
+# mit --schon-bereinigt wird die Aufnahme nur übernommen (z. B. wenn sie aus mehreren Dateien zusammengesetzt wurde)
+filt = 'anull' if '--schon-bereinigt' in sys.argv else 'highpass=f=85,afftdn=nf=-40:nr=10:tn=1,loudnorm=I=-17:TP=-1.5:LRA=9'
+subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', src, '-af', filt, '-ar', '48000', '-ac', '1', clean], check=True)
 
 cuts = []
 for i, k in enumerate(ks):

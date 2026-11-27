@@ -1,0 +1,226 @@
+[
+ {
+  "id": "coal",
+  "line": 0,
+  "start": 0,
+  "end": 6.12,
+  "gap": 1.1,
+  "text": "Das Problem. Ein großer Teil unserer Energie kommt noch aus Kohle, Öl und Gas."
+ },
+ {
+  "id": "coal",
+  "line": 1,
+  "start": 7.49,
+  "end": 9.62,
+  "gap": 1.1,
+  "text": "Weltweit sind es rund vier Fünfte."
+ },
+ {
+  "id": "greenhouse",
+  "line": 0,
+  "start": 11.17,
+  "end": 17.04,
+  "gap": 1.1,
+  "text": "Bei Verbrennen steht CO2. Es legt sich wie eine Decke um die Erde, der Treibhauseffekt."
+ },
+ {
+  "id": "greenhouse",
+  "line": 1,
+  "start": 19.35,
+  "end": 23.3,
+  "gap": 1.1,
+  "text": "Die Erde wird wärmer. Es gibt mehr Hitzewellen, Dürren und Unwetter."
+ },
+ {
+  "id": "share",
+  "line": 0,
+  "start": 25.59,
+  "end": 30.6,
+  "gap": 1.1,
+  "text": "Rund drei Viertel aller Treibhausgase stammen aus der Erzeugung und dem Verbrauch von Energie."
+ },
+ {
+  "id": "price",
+  "line": 0,
+  "start": 33.81,
+  "end": 37.14,
+  "gap": 1.1,
+  "text": "Gleichzeitig wird Energie für viele Menschen immer teurer."
+ },
+ {
+  "id": "price",
+  "line": 1,
+  "start": 38.29,
+  "end": 42.5,
+  "gap": 1.1,
+  "text": "Öl und Gas sind begrenzt und werden oft in wenigen Ländern gefördert."
+ },
+ {
+  "id": "price",
+  "line": 2,
+  "start": 44.87,
+  "end": 48.16,
+  "gap": 0.85,
+  "text": "Bei Krisen oder Kriegen steigen die Preise schnell."
+ },
+ {
+  "id": "question",
+  "line": 0,
+  "start": 48.46,
+  "end": 51.83,
+  "gap": 1.1,
+  "text": "Wie schaffen wir es also globale Energiewende?"
+ },
+ {
+  "id": "goals1",
+  "line": 0,
+  "start": 54.14,
+  "end": 56.25,
+  "gap": 1.1,
+  "text": "SDG 7 hat drei Kernziele."
+ },
+ {
+  "id": "goals1",
+  "line": 1,
+  "start": 57.32,
+  "end": 61.47,
+  "gap": 1.1,
+  "text": "Erstens, jeder Mensch soll Zugang zu bezahlbaren und verlässlichen Strom haben."
+ },
+ {
+  "id": "offgrid",
+  "line": 0,
+  "start": 63.69,
+  "end": 67.68,
+  "gap": 1.1,
+  "text": "Dafür muss nicht überall ein großes Stromnetz gebaut werden."
+ },
+ {
+  "id": "offgrid",
+  "line": 1,
+  "start": 69.43,
+  "end": 76.16,
+  "gap": 0.82,
+  "text": "In abgelegenen Dörfern helfen Solaranlagen auf den Dach oder kleine Inselnetze, sogenannte Mini-Grids."
+ },
+ {
+  "id": "offgrid",
+  "line": 2,
+  "start": 76.43,
+  "end": 81.96,
+  "gap": 1.1,
+  "text": "Schon ein kleiner Solarpanel reicht für Licht, ein Handy und ein Radium."
+ },
+ {
+  "id": "offgrid",
+  "line": 3,
+  "start": 83.13,
+  "end": 88.22,
+  "gap": 1.1,
+  "text": "So bekommen Familien Licht zum Lernen und kleine Läden können länger öffnen."
+ },
+ {
+  "id": "stove",
+  "line": 0,
+  "start": 89.29,
+  "end": 98.48,
+  "gap": 1.0,
+  "text": "Und statt über offenem Feuer kann mit sauberen Kochern gekocht werden, mit Gas, Strom und Solarenergie."
+ },
+ {
+  "id": "goals2",
+  "line": 0,
+  "start": 98.93,
+  "end": 104.22,
+  "gap": 1.1,
+  "text": "Zweitens viel mehr Energie aus erneuerbaren Quellen, wie Wind und Sonne."
+ },
+ {
+  "id": "renew",
+  "line": 0,
+  "start": 105.19,
+  "end": 109.36,
+  "gap": 0.78,
+  "text": "Dazu gehören auch Wasserkraft, Erdwärme und Biomasse."
+ },
+ {
+  "id": "renew",
+  "line": 1,
+  "start": 109.59,
+  "end": 114.22,
+  "gap": 1.1,
+  "text": "Diese Quellen gehen nicht aus und verursachen bei Betrieb kaum CO2."
+ },
+ {
+  "id": "renew",
+  "line": 2,
+  "start": 115.61,
+  "end": 122.06,
+  "gap": 1.1,
+  "text": "Solarstrom ist in vielen Ländern inzwischen sogar die günstigste Art Strom zu erzeugen."
+ },
+ {
+  "id": "germany",
+  "line": 0,
+  "start": 122.93,
+  "end": 128.44,
+  "gap": 1.1,
+  "text": "In Deutschland kommt inzwischen mehr als die Hälfte des Stroms aus erneuerbaren Energien."
+ },
+ {
+  "id": "storage",
+  "line": 0,
+  "start": 130.15,
+  "end": 138.59,
+  "gap": 0.45,
+  "text": "Weil der Wind nicht immer weht und die Sonne nachts nicht scheint, brauchen wir Speicher wie Batterien"
+ },
+ {
+  "id": "storage",
+  "line": 1,
+  "start": 138.64,
+  "end": 146.3,
+  "gap": 0.98,
+  "text": "und gut ausgebaute Stromnetze, die die Energie dort bringen, wo sie gebraucht wird."
+ },
+ {
+  "id": "goals3",
+  "line": 0,
+  "start": 146.73,
+  "end": 153.18,
+  "gap": 1.1,
+  "text": "Drittens Energie effizienter nutzen. Eine LED leuchtet genauso hell, braucht aber viel weniger Strom."
+ },
+ {
+  "id": "efficiency",
+  "line": 0,
+  "start": 154.73,
+  "end": 159.16,
+  "gap": 0.9,
+  "text": "Effizienz bedeutet, mit weniger Energie das Gleiche erreichen."
+ },
+ {
+  "id": "efficiency",
+  "line": 1,
+  "start": 159.51,
+  "end": 164.58,
+  "gap": 0.62,
+  "text": "Gut gedämmte Häuser brauchen weniger Herzenergie, moderne Geräte weniger Strom."
+ },
+ {
+  "id": "efficiency",
+  "line": 2,
+  "start": 164.65,
+  "end": 169.36,
+  "gap": 1.1,
+  "text": "Die beste Energie ist die, die wir gar nicht erst brauchen."
+ },
+ {
+  "id": "hand2",
+  "line": 0,
+  "start": 171.33,
+  "end": 178.3,
+  "gap": 0.6,
+  "text": "Aber was hat das alles mit uns zu tun? Darum geht es im letzten Teil."
+ }
+]
