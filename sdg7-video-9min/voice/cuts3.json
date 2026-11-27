@@ -2,200 +2,203 @@
  {
   "id": "why",
   "line": 0,
-  "start": 0,
-  "end": 2.82,
+  "start": 0.06,
+  "end": 2.44,
   "gap": 1.1,
   "text": "Warum betrifft das uns alle?"
  },
  {
   "id": "hospital",
   "line": 0,
-  "start": 4.15,
-  "end": 7.4,
+  "start": 4.08,
+  "end": 7.02,
   "gap": 1.1,
   "text": "Krankenhäuser brauchen Strom, um Leben zu retten."
  },
  {
   "id": "hospital",
   "line": 1,
-  "start": 8.23,
-  "end": 14.4,
+  "start": 8.22,
+  "end": 14.36,
   "gap": 1.1,
   "text": "Ohne Strom laufen keine Beatmungsgeräte, keine Brutkästen für Babys und keine Kühlschränke für Impfstoffe."
  },
  {
   "id": "hospital",
   "line": 2,
-  "start": 16.05,
-  "end": 21.66,
-  "gap": 0.85,
-  "text": "Fast eine Milliarde Menschen wird in Gesundheitszentren behandelt, die keinen verlässlichen Strom haben."
+  "start": 16.06,
+  "end": 21.48,
+  "gap": 1.1,
+  "text": "Fast 1 Milliarde Menschen wird in Gesundheitszentren behandelt, die keinen verlässlichen Strom haben."
  },
  {
   "id": "school",
   "line": 0,
-  "start": 21.96,
-  "end": 26.95,
-  "gap": 0.8,
-  "text": "Schule brauchen Strom für Licht, Computer und Lernen."
+  "start": 22.7,
+  "end": 26.76,
+  "gap": 0.86,
+  "text": "Schule brauchen Strom für Licht, Computer und Lerne."
  },
  {
   "id": "school",
   "line": 1,
   "start": 27.2,
-  "end": 34.76,
+  "end": 34.86,
   "gap": 1.1,
-  "text": "Wer abends kein Licht hat, kann keine Hausaufgaben machen. Und ohne Internet fehlt da Zugang zu Wissen."
+  "text": "Wer abends kein Licht hat, kann keine Hausaufgaben machen. Ohne Internet fehlt der Zugang zu Wissen."
  },
  {
   "id": "work",
   "line": 0,
   "start": 36.58,
-  "end": 39.51,
+  "end": 39.44,
   "gap": 1.1,
-  "text": "Und Fabriken brauchen Strom für Arbeitsplätze."
+  "text": "Fabriken brauchen Strom für Arbeitsplätze."
  },
  {
   "id": "work",
   "line": 1,
-  "start": 40.2,
-  "end": 45.53,
+  "start": 40.16,
+  "end": 45.36,
   "gap": 1.1,
-  "text": "Bezahlbare Energie hilft Kleinbetrieben zu wachsen und bringt Menschen aus der Armut."
+  "text": "Bezahlbare Energie hilft, Kleinbetrieben zu wachsen und bringt Menschen aus der Armut."
  },
  {
   "id": "climate",
   "line": 0,
-  "start": 47.02,
-  "end": 56.85,
-  "gap": 0.88,
-  "text": "Und das Klima kennt keine Grenzen. Das CO2, das irgendwo auf der Welt ausgestoßen wird, betrifft uns alle."
+  "start": 47.6,
+  "end": 56.62,
+  "gap": 0.96,
+  "text": "Das Klima kennt keine Grenzen. Das CO2, das irgendwo auf der Welt ausgestoßen wird, betrifft uns alle."
  },
  {
   "id": "climate",
   "line": 1,
-  "start": 57.18,
-  "end": 67.43,
+  "start": 57.16,
+  "end": 67.38,
   "gap": 1.1,
   "text": "Länder, die am wenigsten CO2 ausstoßen, leiden oft am stärksten unter den Folgen. Saubere Energie schützt also auch unsere Zukunft."
  },
  {
   "id": "wende",
   "line": 0,
-  "start": 68.22,
-  "end": 77.31,
-  "gap": 0.88,
-  "text": "Auch hier in Deutschland ist die Energiewende ein großes Thema. Kohlekraftwerke werden abgeschaltet. Neue Windräder und Solaranlagen gebaut."
+  "start": 68.28,
+  "end": 77.56,
+  "gap": 0.0,
+  "text": "Auch hier in Deutschland ist die Energiewende ein großes Thema. Kohlekraftwerke werden abgeschaltet, neue Windräder und Solaranlagen gebaut",
+  "join": true
  },
  {
   "id": "wende",
   "line": 1,
-  "start": 77.64,
-  "end": 82.41,
-  "gap": 1.1,
-  "text": "Und viele Häuser bekommen Wärmepumpen statt Öl- oder Gasheizungen."
+  "start": 77.56,
+  "end": 82.38,
+  "gap": 0.64,
+  "text": "und viele Häuser bekommen Wärmepumpen statt Öl oder Gasheizungen."
  },
  {
   "id": "wende",
   "line": 2,
-  "start": 83.14,
-  "end": 88.07,
+  "start": 82.6,
+  "end": 88.4,
   "gap": 1.1,
-  "text": "Das schafft auch neue Jobs zum Beispiel für Elektrikerinnen, Ingenieure und Handwerker."
+  "text": "Das schafft auch neue Jobs, zum Beispiel für Elektrikerinnen, Ingenieure und Handwerker."
  },
  {
   "id": "room",
   "line": 0,
-  "start": 89.48,
-  "end": 94.65,
+  "start": 89.54,
+  "end": 93.78,
   "gap": 1.1,
-  "text": "Was kannst du tun? Licht aus, wenn du den Raum verlässt."
+  "text": "Was kannst du tun? Licht aus, wenn du in den Raum verlässt."
  },
  {
   "id": "room",
   "line": 1,
-  "start": 95.48,
-  "end": 102.37,
+  "start": 95.52,
+  "end": 102.24,
   "gap": 1.1,
   "text": "Die Heizung ein bisschen runterdrehen. Schon ein Grad weniger spart rund 6% Heizenergie."
  },
  {
   "id": "room",
   "line": 2,
-  "start": 103.2,
-  "end": 111.53,
+  "start": 103.34,
+  "end": 111.1,
   "gap": 1.1,
   "text": "Geräte richtig ausschalten, statt sie im Stand beizulassen. Zum Beispiel einer Steckdosenleiste mit Schalter."
  },
  {
   "id": "move",
   "line": 0,
-  "start": 113.24,
-  "end": 120.99,
+  "start": 113.26,
+  "end": 121.06,
   "gap": 1.1,
-  "text": "Öfter mit dem Fahrrad zu Fuß oder mit Bus und Bahn unterwegs sein, denn Aufverkehr aber braucht viel Energie."
+  "text": "Öfter mit dem Fahrrad zu Fuß oder mit Bus und Bahn unterwegs sein, denn auch Verkehrspapper brauchen viel Energie."
  },
  {
   "id": "green",
   "line": 0,
-  "start": 122.7,
-  "end": 124.45,
-  "gap": 1.1,
-  "text": "Oder zu Ökostrom wechseln."
+  "start": 122.1,
+  "end": 125.04,
+  "gap": 0.0,
+  "text": "Oder zu Ökostrom wechseln.",
+  "join": true
  },
  {
   "id": "green",
   "line": 1,
-  "start": 125.14,
-  "end": 129.87,
+  "start": 125.04,
+  "end": 129.32,
   "gap": 1.1,
-  "text": "Sprich mit deiner Familie darüber, vielleicht wechselt ihr gemeinsam den Stromanbieter."
+  "text": "Sprich mit deiner Familie darüber. Vielleicht wechselt ihr gemeinsam den Stromanbieter."
  },
  {
   "id": "schoolact",
   "line": 0,
-  "start": 130.84,
-  "end": 142.17,
-  "gap": 0.85,
-  "text": "Auch in der Schule könnt ihr etwas tun. Energiesparprojekte starten, richtig lüften, kurz und kräftig das Fenster auf Kipp oder eine Solaranlage auf Schuldach bringen."
+  "start": 131.36,
+  "end": 142.14,
+  "gap": 0.92,
+  "text": "Auch in der Schule könnt ihr etwas tun. Energiesparprojekte starten, richtig lüften, kurz und kräftig statt Fenster auf Kipp oder eine Solaranlage auf Schuldach bringen."
  },
  {
   "id": "schoolact",
   "line": 1,
-  "start": 142.47,
-  "end": 145.74,
+  "start": 142.64,
+  "end": 145.5,
   "gap": 1.1,
-  "text": "Dritte, viele Menschen. Das macht einen großen Unterschied."
+  "text": "Dritte viele Menschen, das macht einen großen Unterschied."
  },
  {
   "id": "summary",
   "line": 0,
-  "start": 148.59,
-  "end": 154.88,
-  "gap": 1.1,
-  "text": "Fassen wir zusammen. SDG 7, die Energie für alle bezahlbar, verlässlich und sauber."
+  "start": 148.66,
+  "end": 155.72,
+  "gap": 0.0,
+  "text": "Fassen wir zusammen. SDGs 7, die Energie für alle bezahlbar, verlässlich und sauber.",
+  "join": true
  },
  {
   "id": "summary",
   "line": 1,
-  "start": 155.83,
-  "end": 161.38,
+  "start": 155.72,
+  "end": 160.92,
   "gap": 1.1,
-  "text": "Dafür brauchen wir Zugang für alle, mehr erneuerbare Energie und mehr Effizienz."
+  "text": "Dafür brauchen wir Zugang für alle. Mehr erneuerbare Energie und mehr Effizienz."
  },
  {
   "id": "summary",
   "line": 2,
-  "start": 162.65,
-  "end": 167.3,
+  "start": 162.72,
+  "end": 166.78,
   "gap": 1.1,
-  "text": "Die Energiewende ist eine riesige Aufgabe, aber jede und jeder kann einen Teil beitragen."
+  "text": "Die Energiewende ist eine riesige Aufgabe, aber jede und jeder kann ein Teil beitragen."
  },
  {
   "id": "outro",
   "line": 0,
-  "start": 170.59,
-  "end": 174.66,
+  "start": 170.58,
+  "end": 174.58,
   "gap": 0.6,
   "text": "Jede Kilowattstunde zählt. SDG 7, Energie für alle."
  }

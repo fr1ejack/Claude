@@ -42,10 +42,11 @@ for f in sorted(glob.glob(os.path.join(HERE, 'cuts*.json'))):
     bed = roomtone(a, s1 - s0) * 0.75
     f1 = int(0.8 * SR); bed[:f1] *= np.linspace(0, 1, f1); bed[-f1:] *= np.linspace(1, 0, f1)
     i0 = int(s0 * SR); track[i0:i0 + len(bed)] += bed
-    for c in cuts:
+    for ci, c in enumerate(cuts):
         clip = a[int(c['start'] * SR):int(c['end'] * SR)].copy()
         fi, fo = int(0.05 * SR), int(0.15 * SR)
-        clip[:fi] *= np.linspace(0, 1, fi); clip[-fo:] *= np.linspace(1, 0, fo)
+        if not (ci > 0 and cuts[ci - 1].get('join')): clip[:fi] *= np.linspace(0, 1, fi)   # bei durchlaufenden Sätzen keine Blende
+        if not c.get('join'): clip[-fo:] *= np.linspace(1, 0, fo)
         sc = SC[c['id']]; at = sc['start'] + sc['cues'][c['line']] - 0.1
         j = int(at * SR); track[j:j + len(clip)] += clip
     print(f'Teil {part}: {len(cuts)} Sätze eingesetzt ({ps[0]["start"]:.1f}–{s1:.1f} s)')
